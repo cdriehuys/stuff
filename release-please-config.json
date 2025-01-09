@@ -7,7 +7,7 @@
       "bump-patch-for-minor-pre-major": false,
       "draft": false,
       "prerelease": false,
-      "extra-files": ["internal/api/api.yaml"]
+      "extra-files": ["api/internal/api/api.yaml"]
     },
     "web": {
       "bump-minor-pre-major": true,
