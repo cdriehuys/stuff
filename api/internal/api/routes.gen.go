@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
@@ -19,11 +20,34 @@ type ModelCollection struct {
 	Ping string `json:"ping"`
 }
 
+// Vendor defines model for Vendor.
+type Vendor struct {
+	// CreatedAt The instant the vendor was added to the system.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id A unique identifier for the vendor.
+	Id int `json:"id"`
+
+	// Name A readable name for the vendor.
+	Name string `json:"name"`
+
+	// UpdatedAt The instant the vendor's information was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// VendorCollection defines model for VendorCollection.
+type VendorCollection struct {
+	Items []Vendor `json:"items"`
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (GET /models)
 	GetModels(w http.ResponseWriter, r *http.Request)
+
+	// (GET /vendors)
+	GetVendors(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -40,6 +64,20 @@ func (siw *ServerInterfaceWrapper) GetModels(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetModels(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetVendors operation middleware
+func (siw *ServerInterfaceWrapper) GetVendors(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVendors(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -170,6 +208,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc("GET "+options.BaseURL+"/models", wrapper.GetModels)
+	m.HandleFunc("GET "+options.BaseURL+"/vendors", wrapper.GetVendors)
 
 	return m
 }
@@ -190,11 +229,30 @@ func (response GetModels200JSONResponse) VisitGetModelsResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetVendorsRequestObject struct {
+}
+
+type GetVendorsResponseObject interface {
+	VisitGetVendorsResponse(w http.ResponseWriter) error
+}
+
+type GetVendors200JSONResponse VendorCollection
+
+func (response GetVendors200JSONResponse) VisitGetVendorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
 	// (GET /models)
 	GetModels(ctx context.Context, request GetModelsRequestObject) (GetModelsResponseObject, error)
+
+	// (GET /vendors)
+	GetVendors(ctx context.Context, request GetVendorsRequestObject) (GetVendorsResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -243,6 +301,30 @@ func (sh *strictHandler) GetModels(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetModelsResponseObject); ok {
 		if err := validResponse.VisitGetModelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetVendors operation middleware
+func (sh *strictHandler) GetVendors(w http.ResponseWriter, r *http.Request) {
+	var request GetVendorsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetVendors(ctx, request.(GetVendorsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetVendors")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetVendorsResponseObject); ok {
+		if err := validResponse.VisitGetVendorsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
