@@ -1,0 +1,25 @@
+openapi: "3.0.0"
+info:
+  version: 0.0.1  # x-release-please-version
+  title: Manage stuff you own
+paths:
+  /models:
+    get:
+      responses:
+        '200':
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCollection'
+
+components:
+  schemas:
+    ModelCollection:
+      type: object
+      required:
+        - ping
+      properties:
+        ping:
+          type: string
+          example: pong
