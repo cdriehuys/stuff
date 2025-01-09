@@ -1,11 +1,12 @@
 {
   "packages": {
     "api": {
+      "release-type": "go",
       "bump-minor-pre-major": true,
       "extra-files": [
         {
           "type": "generic",
-          "path": "internal/api/api.yaml"
+          "path": "/api/internal/api/api.yaml"
         }
       ]
     },
