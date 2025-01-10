@@ -1,0 +1,3 @@
+# Causes permanent diffs between the generated code and what prettier wants the
+# file to look like.
+api.d.ts

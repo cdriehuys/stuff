@@ -1,0 +1,11 @@
+.header {
+  flex-direction: column;
+
+  @media (min-width: $mantine-breakpoint-lg) {
+    flex-direction: row;
+  }
+}
+
+.title {
+  flex-grow: 1;
+}

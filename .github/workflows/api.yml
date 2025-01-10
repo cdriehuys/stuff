@@ -3,13 +3,14 @@ on:
     branches:
       - main
     paths:
-      - 'api/**'
+      - "api/**"
 
   push:
     branches:
       - main
     paths:
-      - 'api/**'
+      - "api.yaml"
+      - "api/**"
 
 name: API
 

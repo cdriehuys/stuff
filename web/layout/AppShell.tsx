@@ -1,7 +1,13 @@
 "use client";
 
 import NavLink from "@/components/NavLink";
-import { AppShell as AppShellBase, Burger, Group, Title } from "@mantine/core";
+import {
+  AppShell as AppShellBase,
+  Burger,
+  Container,
+  Group,
+  Title,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React from "react";
 
@@ -28,7 +34,11 @@ export default function AppShell({ children }: Props) {
         <NavLink exact href="/" label="Home" />
         <NavLink href="/vendors" label="Vendors" />
       </AppShellBase.Navbar>
-      <AppShellBase.Main>{children}</AppShellBase.Main>
+      <AppShellBase.Main>
+        <Container fluid p="md">
+          {children}
+        </Container>
+      </AppShellBase.Main>
     </AppShellBase>
   );
 }
