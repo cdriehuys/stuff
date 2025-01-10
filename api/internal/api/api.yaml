@@ -2,6 +2,11 @@ openapi: "3.0.0"
 info:
   version: "0.0.1"  # x-release-please-version
   title: Manage stuff you own
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
 paths:
   /models:
     get:
@@ -23,8 +28,107 @@ paths:
               schema:
                 $ref: '#/components/schemas/VendorCollection'
 
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewVendor'
+
+      responses:
+        '201':
+          description: Vendor created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+  /vendors/{vendorID}:
+    get:
+      parameters:
+        - name: vendorID
+          in: path
+          required: true
+          schema:
+            type: integer
+            description: The ID of the vendor to retrieve.
+            example: 17
+      responses:
+        '200':
+          description: Vendor found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+    delete:
+      parameters:
+        - name: vendorID
+          in: path
+          required: true
+          schema:
+            type: integer
+            description: The ID of the vendor to retrieve.
+            example: 17
+      responses:
+        '204':
+          description: Vendor deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+
+
 components:
   schemas:
+    Model:
+      type: object
+      required:
+        - id
+        - model
+        - vendorID
+        - name
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          description: A unique identifier for the model.
+        model:
+          type: string
+          description: The unique vendor-provided identifier for the model.
+        vendorID:
+          type: integer
+          description: The ID of the vendor who produces the model.
+        name:
+          type: string
+          description: A readable name for the vendor.
+          example: Acme Inc.
+        createdAt:
+          type: string
+          format: date-time
+          description: The instant the vendor was added to the system.
+        updatedAt:
+          type: string
+          format: date-time
+          description: The instant the vendor's information was last updated.
+
     Vendor:
       type: object
       required:
@@ -49,15 +153,28 @@ components:
           format: date-time
           description: The instant the vendor's information was last updated.
 
+    NewVendor:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: A readable name for the vendor.
+          example: Acme Inc.
+          pattern: '^\s{1,150}$'
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=1,max=150"
 
     ModelCollection:
       type: object
       required:
-        - ping
+        - items
       properties:
-        ping:
-          type: string
-          example: pong
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
 
     VendorCollection:
       type: object
@@ -68,3 +185,31 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Vendor'
+
+    APIError:
+      type: object
+      properties:
+        fields:
+          type: array
+          description: An array of errors associated with specific fields.
+          items:
+            $ref: '#/components/schemas/FieldError'
+        message:
+          type: string
+          description: A high-level overview of the error condition.
+          example: No widget found with ID 24.
+
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: The name of a field that failed validation.
+          example: username
+        message:
+          type: string
+          description: A description of why the field is invalid.
+          example: This field must be between 1 and 20 characters long.
