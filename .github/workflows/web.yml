@@ -11,6 +11,8 @@ on:
     paths:
       - 'web/**'
 
+name: web
+
 jobs:
   test-web:
     runs-on: ubuntu-latest

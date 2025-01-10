@@ -5,6 +5,14 @@ on:
     paths:
       - 'api/**'
 
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+
+name: API
+
 jobs:
   test-api:
     runs-on: ubuntu-latest
