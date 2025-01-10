@@ -1,3 +1,4 @@
 {
+    "editor.formatOnSave": true,
     "prettier.prettierPath": "./web/node_modules/prettier"
 }

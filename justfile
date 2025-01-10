@@ -1,9 +1,18 @@
 default:
   just --list
 
+# Generate code
+generate: generate-api generate-web
+
+# Generate code for the API
 [group('api')]
-generate:
-  cd api && go generate ./...
+generate-api:
+  @cd api && go generate ./...
+
+# Generate code for the web app
+[group('web')]
+generate-web:
+  @cd web && npm run generate-api-client
 
 # Open shell connected to dev database
 [group('database')]
@@ -34,3 +43,8 @@ _tern +ARGS:
     set -eufo pipefail
     cd {{migration_dir}}
     go run github.com/jackc/tern/v2 {{ARGS}}
+
+# Start the web development server
+[group('web')]
+web-dev:
+  @cd web && API_BASE_URL=http://localhost:8080 npm run dev

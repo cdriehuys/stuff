@@ -1,0 +1,50 @@
+volumes:
+  database:
+
+services:
+  db:
+    image: postgres:17
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+
+    volumes:
+      - database:/var/lib/postgresql/data
+
+  api-migrate:
+    build:
+      context: api
+      dockerfile: Dockerfile
+
+    command: ["migrate"]
+
+    environment:
+      STUFF_DSN: postgres://postgres:password@db/postgres
+
+    depends_on:
+      db:
+        condition: service_started
+
+  api:
+    build:
+      context: api
+      dockerfile: Dockerfile
+
+    environment:
+      STUFF_DSN: postgres://postgres:password@db/postgres
+
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: web
+      dockerfile: Dockerfile
+
+    environment:
+      API_BASE_URL: http://api:8080
+
+    ports:
+      - 3000:3000
