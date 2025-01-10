@@ -26,7 +26,9 @@ export default function VendorList() {
         {query.data?.map((vendor: any) => (
           <Table.Tr key={vendor.id}>
             <Table.Td>
-              <Anchor component={Link} c="blue" href={`/vendors/${vendor.id}`}>{vendor.name}</Anchor>
+              <Anchor component={Link} c="blue" href={`/vendors/${vendor.id}`}>
+                {vendor.name}
+              </Anchor>
             </Table.Td>
           </Table.Tr>
         ))}
