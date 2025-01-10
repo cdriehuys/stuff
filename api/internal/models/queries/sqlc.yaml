@@ -2,7 +2,8 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries:
-      - "queries.sql"
+      - "models.sql"
+      - "vendors.sql"
     schema: "../../../migrations"
     gen:
       go:

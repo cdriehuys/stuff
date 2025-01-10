@@ -21,7 +21,7 @@ type Model struct {
 	ID        int64
 	Model     string
 	VendorID  int64
-	Name      pgtype.Text
+	Name      string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }

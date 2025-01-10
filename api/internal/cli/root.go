@@ -51,9 +51,10 @@ func apiRunner(logStream io.Writer) func(*cobra.Command, []string) error {
 
 		defer pool.Close()
 
+		modelModel := models.NewModelModel(logger, pool)
 		vendorModel := models.NewVendorModel(logger, pool)
 
-		server := api.NewServer(logger, vendorModel)
+		server := api.NewServer(logger, modelModel, vendorModel)
 
 		strictHandler := api.NewStrictHandler(server, nil)
 		mux := http.NewServeMux()
