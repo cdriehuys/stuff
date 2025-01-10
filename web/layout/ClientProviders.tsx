@@ -6,11 +6,9 @@ import { ReactNode } from "react";
 const client = new QueryClient();
 
 interface Props {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 export default function ClientProviders({ children }: Props) {
-    return (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    )
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

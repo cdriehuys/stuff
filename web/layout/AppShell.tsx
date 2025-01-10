@@ -1,12 +1,7 @@
 "use client";
 
 import NavLink from "@/components/NavLink";
-import {
-  AppShell as AppShellBase,
-  Burger,
-  Group,
-  Title
-} from "@mantine/core";
+import { AppShell as AppShellBase, Burger, Group, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React from "react";
 
