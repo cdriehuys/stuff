@@ -9,10 +9,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/cdriehuys/stuff/api/internal/api"
 	"github.com/cdriehuys/stuff/api/internal/models"
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -51,8 +54,18 @@ func apiRunner(logStream io.Writer) func(*cobra.Command, []string) error {
 
 		defer pool.Close()
 
-		modelModel := models.NewModelModel(logger, pool)
-		vendorModel := models.NewVendorModel(logger, pool)
+		validate := validator.New(validator.WithRequiredStructEnabled())
+		validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+			name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+			// skip if tag key says it should be ignored
+			if name == "-" {
+				return ""
+			}
+			return name
+		})
+
+		modelModel := models.NewModelModel(logger, pool, validate)
+		vendorModel := models.NewVendorModel(logger, pool, validate)
 
 		server := api.NewServer(logger, modelModel, vendorModel)
 

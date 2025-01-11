@@ -5,26 +5,42 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
-	"github.com/cdriehuys/stuff/api/internal/api"
-	"github.com/cdriehuys/stuff/api/internal/apierrors"
 	"github.com/cdriehuys/stuff/api/internal/models/queries"
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 )
 
+type NewVendor struct {
+	Name string `json:"name" validate:"required,min=1,max=150"`
+}
+
+type Vendor struct {
+	ID        int64
+	Name      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type VendorModel struct {
-	logger  *slog.Logger
-	queries *queries.Queries
+	logger   *slog.Logger
+	queries  *queries.Queries
+	validate *validator.Validate
 }
 
-func NewVendorModel(logger *slog.Logger, db queries.DBTX) *VendorModel {
-	return &VendorModel{logger, queries.New(db)}
+func NewVendorModel(logger *slog.Logger, db queries.DBTX, validate *validator.Validate) *VendorModel {
+	return &VendorModel{logger, queries.New(db), validate}
 }
 
-func (m *VendorModel) Create(ctx context.Context, vendor api.NewVendor) (api.Vendor, error) {
+func (m *VendorModel) Create(ctx context.Context, vendor NewVendor) (Vendor, error) {
+	if err := m.validate.Struct(vendor); err != nil {
+		return Vendor{}, err
+	}
+
 	row, err := m.queries.CreateVendor(ctx, vendor.Name)
 	if err != nil {
-		return api.Vendor{}, fmt.Errorf("failed to create vendor: %v", err)
+		return Vendor{}, fmt.Errorf("failed to create vendor: %v", err)
 	}
 
 	m.logger.InfoContext(ctx, "Created new vendor.", "id", row.ID, "name", row.Name)
@@ -39,7 +55,7 @@ func (m *VendorModel) DeleteByID(ctx context.Context, id int64) error {
 	}
 
 	if rows == 0 {
-		return fmt.Errorf("no vendor deleted: %w", apierrors.ErrNotFound)
+		return fmt.Errorf("no vendor deleted: %w", ErrNotFound)
 	}
 
 	m.logger.InfoContext(ctx, "Deleted vendor.", "id", id)
@@ -47,26 +63,26 @@ func (m *VendorModel) DeleteByID(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (m *VendorModel) GetByID(ctx context.Context, id int64) (api.Vendor, error) {
+func (m *VendorModel) GetByID(ctx context.Context, id int64) (Vendor, error) {
 	row, err := m.queries.GetVendorByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return api.Vendor{}, fmt.Errorf("no vendor with ID %d: %w", id, apierrors.ErrNotFound)
+			return Vendor{}, fmt.Errorf("no vendor with ID %d: %w", id, ErrNotFound)
 		}
 
-		return api.Vendor{}, fmt.Errorf("failed to retrive vendor: %v", err)
+		return Vendor{}, fmt.Errorf("failed to retrive vendor: %v", err)
 	}
 
 	return vendorFromRow(row), nil
 }
 
-func (m *VendorModel) ListVendors(ctx context.Context) ([]api.Vendor, error) {
+func (m *VendorModel) ListVendors(ctx context.Context) ([]Vendor, error) {
 	rows, err := m.queries.ListVendors(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list vendors: %v", err)
 	}
 
-	vendors := make([]api.Vendor, len(rows))
+	vendors := make([]Vendor, len(rows))
 	for i, row := range rows {
 		vendors[i] = vendorFromRow(row)
 	}
@@ -74,9 +90,9 @@ func (m *VendorModel) ListVendors(ctx context.Context) ([]api.Vendor, error) {
 	return vendors, nil
 }
 
-func vendorFromRow(row queries.Vendor) api.Vendor {
-	return api.Vendor{
-		Id:        int(row.ID),
+func vendorFromRow(row queries.Vendor) Vendor {
+	return Vendor{
+		ID:        row.ID,
 		Name:      row.Name,
 		CreatedAt: row.CreatedAt.Time,
 		UpdatedAt: row.UpdatedAt.Time,

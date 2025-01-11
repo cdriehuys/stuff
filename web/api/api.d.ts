@@ -29,10 +29,38 @@ export interface paths {
                         "application/json": components["schemas"]["ModelCollection"];
                     };
                 };
+                500: components["responses"]["ServerError"];
             };
         };
         put?: never;
-        post?: never;
+        /** Create model */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewModel"];
+                };
+            };
+            responses: {
+                /** @description Model created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Model"];
+                    };
+                };
+                400: components["responses"]["InvalidRequest"];
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -68,15 +96,8 @@ export interface paths {
                         "application/json": components["schemas"]["Model"];
                     };
                 };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
             };
         };
         put: {
@@ -103,24 +124,9 @@ export interface paths {
                         "application/json": components["schemas"]["Model"];
                     };
                 };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
+                400: components["responses"]["InvalidRequest"];
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
             };
         };
         post?: never;
@@ -142,15 +148,8 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
             };
         };
         options?: never;
@@ -183,6 +182,7 @@ export interface paths {
                         "application/json": components["schemas"]["VendorCollection"];
                     };
                 };
+                500: components["responses"]["ServerError"];
             };
         };
         put?: never;
@@ -208,15 +208,8 @@ export interface paths {
                         "application/json": components["schemas"]["Vendor"];
                     };
                 };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
+                400: components["responses"]["InvalidRequest"];
+                500: components["responses"]["ServerError"];
             };
         };
         delete?: never;
@@ -254,15 +247,8 @@ export interface paths {
                         "application/json": components["schemas"]["Vendor"];
                     };
                 };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
             };
         };
         put?: never;
@@ -285,15 +271,8 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
             };
         };
         options?: never;
@@ -331,63 +310,12 @@ export interface paths {
                         "application/json": components["schemas"]["ModelCollection"];
                     };
                 };
-                /** @description Vendor not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
             };
         };
         put?: never;
-        /** Add vendor model */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    vendorID: number;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["NewModel"];
-                };
-            };
-            responses: {
-                /** @description Model created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Model"];
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
-                /** @description Missing vendor */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["APIError"];
-                    };
-                };
-            };
-        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -429,6 +357,11 @@ export interface components {
              * @example Acme Inc.
              */
             name?: string;
+            /**
+             * @description The ID of the vendor that produces the model.
+             * @example 36
+             */
+            vendorID: number;
         };
         Vendor: {
             /** @description A unique identifier for the vendor. */
@@ -442,12 +375,12 @@ export interface components {
              * Format: date-time
              * @description The instant the vendor was added to the system.
              */
-            created_at: string;
+            createdAt: string;
             /**
              * Format: date-time
              * @description The instant the vendor's information was last updated.
              */
-            updated_at: string;
+            updatedAt: string;
         };
         NewVendor: {
             /**
@@ -484,7 +417,35 @@ export interface components {
             message: string;
         };
     };
-    responses: never;
+    responses: {
+        /** @description Invalid request */
+        InvalidRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["APIError"];
+            };
+        };
+        /** @description Not found */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["APIError"];
+            };
+        };
+        /** @description Server error */
+        ServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["APIError"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
