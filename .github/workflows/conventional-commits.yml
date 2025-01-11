@@ -2,7 +2,7 @@ name: Conventional Commits
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -13,4 +13,4 @@ jobs:
 
       - uses: webiny/action-conventional-commits@v1.3.0
         with:
-          allowed-commit-types: "chore,ci,docs,feat,fix"
+          allowed-commit-types: "chore,ci,docs,feat,fix,refactor"

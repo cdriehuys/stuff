@@ -17,6 +17,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelCollection"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      summary: Create model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewModel"
+      responses:
+        "201":
+          description: Model created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Model"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
   /models/{modelID}:
     parameters:
@@ -37,11 +61,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Model"
         "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
     put:
       requestBody:
@@ -58,28 +80,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/Model"
         "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/InvalidRequest"
         "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
     delete:
       responses:
         "204":
           description: Model deleted
         "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
   /vendors:
     get:
@@ -90,6 +104,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VendorCollection"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
     post:
       requestBody:
@@ -107,11 +123,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Vendor"
         "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/InvalidRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
   /vendors/{vendorID}:
     parameters:
@@ -131,22 +145,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Vendor"
         "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
     delete:
       responses:
         "204":
           description: Vendor deleted
         "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
   /vendors/{vendorID}/models:
     parameters:
@@ -168,41 +178,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/ModelCollection"
         "404":
-          description: Vendor not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
-
-    post:
-      summary: Add vendor model
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NewModel"
-      responses:
-        "201":
-          description: Model created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Model"
-        "400":
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
-        "404":
-          description: Missing vendor
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIError"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
 components:
+  responses:
+    InvalidRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/APIError"
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/APIError"
+
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/APIError"
+
   schemas:
     Model:
       type: object
@@ -240,6 +242,7 @@ components:
       type: object
       required:
         - model
+        - vendorID
       properties:
         model:
           type: string
@@ -248,14 +251,18 @@ components:
           type: string
           description: A readable name for the vendor.
           example: Acme Inc.
+        vendorID:
+          type: integer
+          description: The ID of the vendor that produces the model.
+          example: 36
 
     Vendor:
       type: object
       required:
         - id
         - name
-        - created_at
-        - updated_at
+        - createdAt
+        - updatedAt
       properties:
         id:
           type: integer
@@ -264,11 +271,11 @@ components:
           type: string
           description: A readable name for the vendor.
           example: Acme Inc.
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: The instant the vendor was added to the system.
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
           description: The instant the vendor's information was last updated.
@@ -283,8 +290,6 @@ components:
           description: A readable name for the vendor.
           example: Acme Inc.
           pattern: '^\s{1,150}$'
-          x-oapi-codegen-extra-tags:
-            validate: "required,min=1,max=150"
 
     ModelCollection:
       type: object

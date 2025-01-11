@@ -132,19 +132,25 @@ func (q *Queries) ListModelsByVendorID(ctx context.Context, vendorID int64) ([]M
 
 const updateModelByID = `-- name: UpdateModelByID :one
 UPDATE models
-SET model = $2, name = $3
+SET vendor_id = $4, model = $2, name = $3
 WHERE id = $1
 RETURNING id, model, vendor_id, name, created_at, updated_at
 `
 
 type UpdateModelByIDParams struct {
-	ID    int64
-	Model string
-	Name  string
+	ID       int64
+	Model    string
+	Name     string
+	VendorID int64
 }
 
 func (q *Queries) UpdateModelByID(ctx context.Context, arg UpdateModelByIDParams) (Model, error) {
-	row := q.db.QueryRow(ctx, updateModelByID, arg.ID, arg.Model, arg.Name)
+	row := q.db.QueryRow(ctx, updateModelByID,
+		arg.ID,
+		arg.Model,
+		arg.Name,
+		arg.VendorID,
+	)
 	var i Model
 	err := row.Scan(
 		&i.ID,

@@ -67,18 +67,21 @@ type NewModel struct {
 
 	// Name A readable name for the vendor.
 	Name *string `json:"name,omitempty"`
+
+	// VendorID The ID of the vendor that produces the model.
+	VendorID int `json:"vendorID"`
 }
 
 // NewVendor defines model for NewVendor.
 type NewVendor struct {
 	// Name A readable name for the vendor.
-	Name string `json:"name" validate:"required,min=1,max=150"`
+	Name string `json:"name"`
 }
 
 // Vendor defines model for Vendor.
 type Vendor struct {
 	// CreatedAt The instant the vendor was added to the system.
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 
 	// Id A unique identifier for the vendor.
 	Id int `json:"id"`
@@ -87,7 +90,7 @@ type Vendor struct {
 	Name string `json:"name"`
 
 	// UpdatedAt The instant the vendor's information was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // VendorCollection defines model for VendorCollection.
@@ -95,20 +98,32 @@ type VendorCollection struct {
 	Items []Vendor `json:"items"`
 }
 
+// InvalidRequest defines model for InvalidRequest.
+type InvalidRequest = APIError
+
+// NotFound defines model for NotFound.
+type NotFound = APIError
+
+// ServerError defines model for ServerError.
+type ServerError = APIError
+
+// PostModelsJSONRequestBody defines body for PostModels for application/json ContentType.
+type PostModelsJSONRequestBody = NewModel
+
 // PutModelsModelIDJSONRequestBody defines body for PutModelsModelID for application/json ContentType.
 type PutModelsModelIDJSONRequestBody = NewModel
 
 // PostVendorsJSONRequestBody defines body for PostVendors for application/json ContentType.
 type PostVendorsJSONRequestBody = NewVendor
 
-// PostVendorsVendorIDModelsJSONRequestBody defines body for PostVendorsVendorIDModels for application/json ContentType.
-type PostVendorsVendorIDModelsJSONRequestBody = NewModel
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (GET /models)
 	GetModels(w http.ResponseWriter, r *http.Request)
+	// Create model
+	// (POST /models)
+	PostModels(w http.ResponseWriter, r *http.Request)
 
 	// (DELETE /models/{modelID})
 	DeleteModelsModelID(w http.ResponseWriter, r *http.Request, modelID int)
@@ -133,9 +148,6 @@ type ServerInterface interface {
 	// List vendor models
 	// (GET /vendors/{vendorID}/models)
 	GetVendorsVendorIDModels(w http.ResponseWriter, r *http.Request, vendorID int)
-	// Add vendor model
-	// (POST /vendors/{vendorID}/models)
-	PostVendorsVendorIDModels(w http.ResponseWriter, r *http.Request, vendorID int)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -152,6 +164,20 @@ func (siw *ServerInterfaceWrapper) GetModels(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetModels(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostModels operation middleware
+func (siw *ServerInterfaceWrapper) PostModels(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostModels(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -339,31 +365,6 @@ func (siw *ServerInterfaceWrapper) GetVendorsVendorIDModels(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
-// PostVendorsVendorIDModels operation middleware
-func (siw *ServerInterfaceWrapper) PostVendorsVendorIDModels(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "vendorID" -------------
-	var vendorID int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "vendorID", r.PathValue("vendorID"), &vendorID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "vendorID", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostVendorsVendorIDModels(w, r, vendorID)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -485,6 +486,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc("GET "+options.BaseURL+"/models", wrapper.GetModels)
+	m.HandleFunc("POST "+options.BaseURL+"/models", wrapper.PostModels)
 	m.HandleFunc("DELETE "+options.BaseURL+"/models/{modelID}", wrapper.DeleteModelsModelID)
 	m.HandleFunc("GET "+options.BaseURL+"/models/{modelID}", wrapper.GetModelsModelID)
 	m.HandleFunc("PUT "+options.BaseURL+"/models/{modelID}", wrapper.PutModelsModelID)
@@ -493,10 +495,15 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/vendors/{vendorID}", wrapper.DeleteVendorsVendorID)
 	m.HandleFunc("GET "+options.BaseURL+"/vendors/{vendorID}", wrapper.GetVendorsVendorID)
 	m.HandleFunc("GET "+options.BaseURL+"/vendors/{vendorID}/models", wrapper.GetVendorsVendorIDModels)
-	m.HandleFunc("POST "+options.BaseURL+"/vendors/{vendorID}/models", wrapper.PostVendorsVendorIDModels)
 
 	return m
 }
+
+type InvalidRequestJSONResponse APIError
+
+type NotFoundJSONResponse APIError
+
+type ServerErrorJSONResponse APIError
 
 type GetModelsRequestObject struct {
 }
@@ -510,6 +517,59 @@ type GetModels200JSONResponse ModelCollection
 func (response GetModels200JSONResponse) VisitGetModelsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetModels500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response GetModels500JSONResponse) VisitGetModelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostModelsRequestObject struct {
+	Body *PostModelsJSONRequestBody
+}
+
+type PostModelsResponseObject interface {
+	VisitPostModelsResponse(w http.ResponseWriter) error
+}
+
+type PostModels201JSONResponse Model
+
+func (response PostModels201JSONResponse) VisitPostModelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostModels400JSONResponse struct{ InvalidRequestJSONResponse }
+
+func (response PostModels400JSONResponse) VisitPostModelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostModels404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PostModels404JSONResponse) VisitPostModelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostModels500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response PostModels500JSONResponse) VisitPostModelsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -530,11 +590,20 @@ func (response DeleteModelsModelID204Response) VisitDeleteModelsModelIDResponse(
 	return nil
 }
 
-type DeleteModelsModelID404JSONResponse APIError
+type DeleteModelsModelID404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response DeleteModelsModelID404JSONResponse) VisitDeleteModelsModelIDResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteModelsModelID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response DeleteModelsModelID500JSONResponse) VisitDeleteModelsModelIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -556,11 +625,20 @@ func (response GetModelsModelID200JSONResponse) VisitGetModelsModelIDResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetModelsModelID404JSONResponse APIError
+type GetModelsModelID404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetModelsModelID404JSONResponse) VisitGetModelsModelIDResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetModelsModelID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response GetModelsModelID500JSONResponse) VisitGetModelsModelIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -583,7 +661,7 @@ func (response PutModelsModelID200JSONResponse) VisitPutModelsModelIDResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PutModelsModelID400JSONResponse APIError
+type PutModelsModelID400JSONResponse struct{ InvalidRequestJSONResponse }
 
 func (response PutModelsModelID400JSONResponse) VisitPutModelsModelIDResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -592,11 +670,20 @@ func (response PutModelsModelID400JSONResponse) VisitPutModelsModelIDResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PutModelsModelID404JSONResponse APIError
+type PutModelsModelID404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response PutModelsModelID404JSONResponse) VisitPutModelsModelIDResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutModelsModelID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response PutModelsModelID500JSONResponse) VisitPutModelsModelIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -613,6 +700,15 @@ type GetVendors200JSONResponse VendorCollection
 func (response GetVendors200JSONResponse) VisitGetVendorsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVendors500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response GetVendors500JSONResponse) VisitGetVendorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -634,11 +730,20 @@ func (response PostVendors201JSONResponse) VisitPostVendorsResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostVendors400JSONResponse APIError
+type PostVendors400JSONResponse struct{ InvalidRequestJSONResponse }
 
 func (response PostVendors400JSONResponse) VisitPostVendorsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostVendors500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response PostVendors500JSONResponse) VisitPostVendorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -659,11 +764,20 @@ func (response DeleteVendorsVendorID204Response) VisitDeleteVendorsVendorIDRespo
 	return nil
 }
 
-type DeleteVendorsVendorID404JSONResponse APIError
+type DeleteVendorsVendorID404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response DeleteVendorsVendorID404JSONResponse) VisitDeleteVendorsVendorIDResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteVendorsVendorID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response DeleteVendorsVendorID500JSONResponse) VisitDeleteVendorsVendorIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -685,11 +799,20 @@ func (response GetVendorsVendorID200JSONResponse) VisitGetVendorsVendorIDRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVendorsVendorID404JSONResponse APIError
+type GetVendorsVendorID404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetVendorsVendorID404JSONResponse) VisitGetVendorsVendorIDResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVendorsVendorID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response GetVendorsVendorID500JSONResponse) VisitGetVendorsVendorIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -711,7 +834,7 @@ func (response GetVendorsVendorIDModels200JSONResponse) VisitGetVendorsVendorIDM
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVendorsVendorIDModels404JSONResponse APIError
+type GetVendorsVendorIDModels404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetVendorsVendorIDModels404JSONResponse) VisitGetVendorsVendorIDModelsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -720,38 +843,11 @@ func (response GetVendorsVendorIDModels404JSONResponse) VisitGetVendorsVendorIDM
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostVendorsVendorIDModelsRequestObject struct {
-	VendorID int `json:"vendorID"`
-	Body     *PostVendorsVendorIDModelsJSONRequestBody
-}
+type GetVendorsVendorIDModels500JSONResponse struct{ ServerErrorJSONResponse }
 
-type PostVendorsVendorIDModelsResponseObject interface {
-	VisitPostVendorsVendorIDModelsResponse(w http.ResponseWriter) error
-}
-
-type PostVendorsVendorIDModels201JSONResponse Model
-
-func (response PostVendorsVendorIDModels201JSONResponse) VisitPostVendorsVendorIDModelsResponse(w http.ResponseWriter) error {
+func (response GetVendorsVendorIDModels500JSONResponse) VisitGetVendorsVendorIDModelsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PostVendorsVendorIDModels400JSONResponse APIError
-
-func (response PostVendorsVendorIDModels400JSONResponse) VisitPostVendorsVendorIDModelsResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PostVendorsVendorIDModels404JSONResponse APIError
-
-func (response PostVendorsVendorIDModels404JSONResponse) VisitPostVendorsVendorIDModelsResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
+	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -761,6 +857,9 @@ type StrictServerInterface interface {
 
 	// (GET /models)
 	GetModels(ctx context.Context, request GetModelsRequestObject) (GetModelsResponseObject, error)
+	// Create model
+	// (POST /models)
+	PostModels(ctx context.Context, request PostModelsRequestObject) (PostModelsResponseObject, error)
 
 	// (DELETE /models/{modelID})
 	DeleteModelsModelID(ctx context.Context, request DeleteModelsModelIDRequestObject) (DeleteModelsModelIDResponseObject, error)
@@ -785,9 +884,6 @@ type StrictServerInterface interface {
 	// List vendor models
 	// (GET /vendors/{vendorID}/models)
 	GetVendorsVendorIDModels(ctx context.Context, request GetVendorsVendorIDModelsRequestObject) (GetVendorsVendorIDModelsResponseObject, error)
-	// Add vendor model
-	// (POST /vendors/{vendorID}/models)
-	PostVendorsVendorIDModels(ctx context.Context, request PostVendorsVendorIDModelsRequestObject) (PostVendorsVendorIDModelsResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -836,6 +932,37 @@ func (sh *strictHandler) GetModels(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetModelsResponseObject); ok {
 		if err := validResponse.VisitGetModelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostModels operation middleware
+func (sh *strictHandler) PostModels(w http.ResponseWriter, r *http.Request) {
+	var request PostModelsRequestObject
+
+	var body PostModelsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostModels(ctx, request.(PostModelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostModels")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostModelsResponseObject); ok {
+		if err := validResponse.VisitPostModelsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1054,39 +1181,6 @@ func (sh *strictHandler) GetVendorsVendorIDModels(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetVendorsVendorIDModelsResponseObject); ok {
 		if err := validResponse.VisitGetVendorsVendorIDModelsResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// PostVendorsVendorIDModels operation middleware
-func (sh *strictHandler) PostVendorsVendorIDModels(w http.ResponseWriter, r *http.Request, vendorID int) {
-	var request PostVendorsVendorIDModelsRequestObject
-
-	request.VendorID = vendorID
-
-	var body PostVendorsVendorIDModelsJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PostVendorsVendorIDModels(ctx, request.(PostVendorsVendorIDModelsRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PostVendorsVendorIDModels")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PostVendorsVendorIDModelsResponseObject); ok {
-		if err := validResponse.VisitPostVendorsVendorIDModelsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

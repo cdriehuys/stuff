@@ -10,12 +10,12 @@ interface Props {
 }
 
 export default function NewVendorModelForm({ vendorID }: Props) {
-  const mutation = apiClient.useMutation("post", "/vendors/{vendorID}/models");
+  const mutation = apiClient.useMutation("post", "/models");
   const mutate = (body: components["schemas"]["NewModel"]) =>
-    mutation.mutate({ params: { path: { vendorID } }, body });
+    mutation.mutate({ body: { ...body, vendorID } });
 
   if (mutation.isSuccess) {
-    const next = `/models/${mutation.data.id}`;
+    const next = `/vendors/${vendorID}/models/${mutation.data.id}`;
     redirect(next);
   }
 

@@ -20,6 +20,6 @@ ORDER BY id LIMIT 50;
 
 -- name: UpdateModelByID :one
 UPDATE models
-SET model = $2, name = $3
+SET vendor_id = @vendor_id, model = $2, name = $3
 WHERE id = $1
 RETURNING *;

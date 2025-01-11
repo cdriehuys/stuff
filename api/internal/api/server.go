@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/cdriehuys/stuff/api/internal/models"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -13,19 +14,19 @@ import (
 var _ StrictServerInterface = (*Server)(nil)
 
 type modelModel interface {
-	Create(ctx context.Context, vendorID int64, model NewModel) (Model, error)
+	Create(ctx context.Context, model models.NewModel) (models.Model, error)
 	DeleteByID(ctx context.Context, id int64) error
-	GetByID(ctx context.Context, id int64) (Model, error)
-	ListByVendorID(ctx context.Context, vendorID int64) ([]Model, error)
-	ListModels(ctx context.Context) ([]Model, error)
-	UpdateByID(ctx context.Context, id int64, model NewModel) (Model, error)
+	GetByID(ctx context.Context, id int64) (models.Model, error)
+	ListByVendorID(ctx context.Context, vendorID int64) ([]models.Model, error)
+	ListModels(ctx context.Context) ([]models.Model, error)
+	UpdateByID(ctx context.Context, id int64, model models.NewModel) (models.Model, error)
 }
 
 type vendorModel interface {
-	Create(ctx context.Context, vendor NewVendor) (Vendor, error)
+	Create(ctx context.Context, vendor models.NewVendor) (models.Vendor, error)
 	DeleteByID(ctx context.Context, id int64) error
-	GetByID(ctx context.Context, id int64) (Vendor, error)
-	ListVendors(ctx context.Context) ([]Vendor, error)
+	GetByID(ctx context.Context, id int64) (models.Vendor, error)
+	ListVendors(ctx context.Context) ([]models.Vendor, error)
 }
 
 type Server struct {
