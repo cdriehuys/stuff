@@ -13,7 +13,12 @@ import (
 var _ StrictServerInterface = (*Server)(nil)
 
 type modelModel interface {
+	Create(ctx context.Context, vendorID int64, model NewModel) (Model, error)
+	DeleteByID(ctx context.Context, id int64) error
+	GetByID(ctx context.Context, id int64) (Model, error)
+	ListByVendorID(ctx context.Context, vendorID int64) ([]Model, error)
 	ListModels(ctx context.Context) ([]Model, error)
+	UpdateByID(ctx context.Context, id int64, model NewModel) (Model, error)
 }
 
 type vendorModel interface {

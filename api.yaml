@@ -1,6 +1,6 @@
 openapi: "3.0.0"
 info:
-  version: "0.0.1"  # x-release-please-version
+  version: "0.0.1" # x-release-please-version
   title: Manage stuff you own
 
 servers:
@@ -11,22 +11,85 @@ paths:
   /models:
     get:
       responses:
-        '200':
+        "200":
           description: Model list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ModelCollection'
+                $ref: "#/components/schemas/ModelCollection"
+
+  /models/{modelID}:
+    parameters:
+      - name: modelID
+        in: path
+        required: true
+        schema:
+          type: integer
+          description: The ID of the model to retrieve.
+          example: 17
+
+    get:
+      responses:
+        "200":
+          description: Model found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Model"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewModel"
+      responses:
+        "200":
+          description: Model updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Model"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+
+    delete:
+      responses:
+        "204":
+          description: Model deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
 
   /vendors:
     get:
       responses:
-        '200':
+        "200":
           description: Vendor list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VendorCollection'
+                $ref: "#/components/schemas/VendorCollection"
 
     post:
       requestBody:
@@ -34,66 +97,110 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewVendor'
+              $ref: "#/components/schemas/NewVendor"
 
       responses:
-        '201':
+        "201":
           description: Vendor created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Vendor'
-        '400':
+                $ref: "#/components/schemas/Vendor"
+        "400":
           description: Invalid request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIError'
+                $ref: "#/components/schemas/APIError"
 
   /vendors/{vendorID}:
+    parameters:
+      - name: vendorID
+        in: path
+        required: true
+        schema:
+          type: integer
+          description: The ID of the vendor to retrieve.
+          example: 17
     get:
-      parameters:
-        - name: vendorID
-          in: path
-          required: true
-          schema:
-            type: integer
-            description: The ID of the vendor to retrieve.
-            example: 17
       responses:
-        '200':
+        "200":
           description: Vendor found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Vendor'
-        '404':
+                $ref: "#/components/schemas/Vendor"
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIError'
+                $ref: "#/components/schemas/APIError"
 
     delete:
-      parameters:
-        - name: vendorID
-          in: path
-          required: true
-          schema:
-            type: integer
-            description: The ID of the vendor to retrieve.
-            example: 17
       responses:
-        '204':
+        "204":
           description: Vendor deleted
-        '404':
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIError'
+                $ref: "#/components/schemas/APIError"
 
+  /vendors/{vendorID}/models:
+    parameters:
+      - name: vendorID
+        in: path
+        required: true
+        schema:
+          type: integer
+          description: The ID of the vendor to retrieve.
+          example: 17
 
+    get:
+      summary: List vendor models
+      responses:
+        "200":
+          description: Listed vendor models
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelCollection"
+        "404":
+          description: Vendor not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+
+    post:
+      summary: Add vendor model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewModel"
+      responses:
+        "201":
+          description: Model created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Model"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+        "404":
+          description: Missing vendor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
 
 components:
   schemas:
@@ -128,6 +235,19 @@ components:
           type: string
           format: date-time
           description: The instant the vendor's information was last updated.
+
+    NewModel:
+      type: object
+      required:
+        - model
+      properties:
+        model:
+          type: string
+          description: The unique vendor-provided identifier for the model.
+        name:
+          type: string
+          description: A readable name for the vendor.
+          example: Acme Inc.
 
     Vendor:
       type: object
@@ -174,7 +294,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Model'
+            $ref: "#/components/schemas/Model"
 
     VendorCollection:
       type: object
@@ -184,7 +304,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Vendor'
+            $ref: "#/components/schemas/Vendor"
 
     APIError:
       type: object
@@ -193,7 +313,7 @@ components:
           type: array
           description: An array of errors associated with specific fields.
           items:
-            $ref: '#/components/schemas/FieldError'
+            $ref: "#/components/schemas/FieldError"
         message:
           type: string
           description: A high-level overview of the error condition.
