@@ -59,3 +59,38 @@ func (s *Server) DeleteVendorsVendorID(ctx context.Context, req DeleteVendorsVen
 
 	return DeleteVendorsVendorID204Response{}, nil
 }
+
+func (s *Server) GetVendorsVendorIDModels(ctx context.Context, req GetVendorsVendorIDModelsRequestObject) (GetVendorsVendorIDModelsResponseObject, error) {
+	_, err := s.vendors.GetByID(ctx, int64(req.VendorID))
+	if err != nil {
+		if errors.Is(err, apierrors.ErrNotFound) {
+			message := "Vendor does not exist."
+			return GetVendorsVendorIDModels404JSONResponse{Message: &message}, nil
+		}
+
+		return GetVendorsVendorIDModels200JSONResponse{}, err
+	}
+
+	s.logger.DebugContext(ctx, "Vendor exists.", "vendorID", req.VendorID)
+
+	models, err := s.models.ListByVendorID(ctx, int64(req.VendorID))
+	if err != nil {
+		return GetVendorsVendorIDModels200JSONResponse{}, err
+	}
+
+	return GetVendorsVendorIDModels200JSONResponse{Items: models}, nil
+}
+
+func (s *Server) PostVendorsVendorIDModels(ctx context.Context, req PostVendorsVendorIDModelsRequestObject) (PostVendorsVendorIDModelsResponseObject, error) {
+	newModel, err := s.models.Create(ctx, int64(req.VendorID), *req.Body)
+	if err != nil {
+		if errors.Is(err, apierrors.ErrNotFound) {
+			message := fmt.Sprintf("No vendor with ID %d.", req.VendorID)
+			return PostVendorsVendorIDModels404JSONResponse{Message: &message}, nil
+		}
+
+		return PostVendorsVendorIDModels201JSONResponse{}, err
+	}
+
+	return PostVendorsVendorIDModels201JSONResponse(newModel), nil
+}

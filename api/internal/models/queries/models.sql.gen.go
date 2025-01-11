@@ -9,6 +9,63 @@ import (
 	"context"
 )
 
+const createModel = `-- name: CreateModel :one
+INSERT INTO models(model, vendor_id, name)
+VALUES ($1, $2, $3)
+RETURNING id, model, vendor_id, name, created_at, updated_at
+`
+
+type CreateModelParams struct {
+	Model    string
+	VendorID int64
+	Name     string
+}
+
+func (q *Queries) CreateModel(ctx context.Context, arg CreateModelParams) (Model, error) {
+	row := q.db.QueryRow(ctx, createModel, arg.Model, arg.VendorID, arg.Name)
+	var i Model
+	err := row.Scan(
+		&i.ID,
+		&i.Model,
+		&i.VendorID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteModelByID = `-- name: DeleteModelByID :execrows
+DELETE FROM models
+WHERE id = $1
+`
+
+func (q *Queries) DeleteModelByID(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteModelByID, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const getModelByID = `-- name: GetModelByID :one
+SELECT id, model, vendor_id, name, created_at, updated_at FROM models WHERE id = $1
+`
+
+func (q *Queries) GetModelByID(ctx context.Context, id int64) (Model, error) {
+	row := q.db.QueryRow(ctx, getModelByID, id)
+	var i Model
+	err := row.Scan(
+		&i.ID,
+		&i.Model,
+		&i.VendorID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listModels = `-- name: ListModels :many
 SELECT id, model, vendor_id, name, created_at, updated_at FROM models ORDER BY id LIMIT 50
 `
@@ -38,4 +95,64 @@ func (q *Queries) ListModels(ctx context.Context) ([]Model, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listModelsByVendorID = `-- name: ListModelsByVendorID :many
+SELECT id, model, vendor_id, name, created_at, updated_at FROM models
+WHERE vendor_id = $1
+ORDER BY id LIMIT 50
+`
+
+func (q *Queries) ListModelsByVendorID(ctx context.Context, vendorID int64) ([]Model, error) {
+	rows, err := q.db.Query(ctx, listModelsByVendorID, vendorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Model
+	for rows.Next() {
+		var i Model
+		if err := rows.Scan(
+			&i.ID,
+			&i.Model,
+			&i.VendorID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateModelByID = `-- name: UpdateModelByID :one
+UPDATE models
+SET model = $2, name = $3
+WHERE id = $1
+RETURNING id, model, vendor_id, name, created_at, updated_at
+`
+
+type UpdateModelByIDParams struct {
+	ID    int64
+	Model string
+	Name  string
+}
+
+func (q *Queries) UpdateModelByID(ctx context.Context, arg UpdateModelByIDParams) (Model, error) {
+	row := q.db.QueryRow(ctx, updateModelByID, arg.ID, arg.Model, arg.Name)
+	var i Model
+	err := row.Scan(
+		&i.ID,
+		&i.Model,
+		&i.VendorID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
