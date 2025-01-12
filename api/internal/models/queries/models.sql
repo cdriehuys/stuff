@@ -11,12 +11,12 @@ WHERE id = $1;
 SELECT * FROM models WHERE id = $1;
 
 -- name: ListModels :many
-SELECT * FROM models ORDER BY id LIMIT 50;
+SELECT * FROM models ORDER BY model LIMIT 50;
 
 -- name: ListModelsByVendorID :many
 SELECT * FROM models
 WHERE vendor_id = $1
-ORDER BY id LIMIT 50;
+ORDER BY model LIMIT 50;
 
 -- name: UpdateModelByID :one
 UPDATE models

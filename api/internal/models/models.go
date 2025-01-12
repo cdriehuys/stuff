@@ -11,12 +11,13 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/leebenson/conform"
 )
 
 type NewModel struct {
 	VendorID int64  `json:"vendorID"`
-	Model    string `json:"model" validate:"required,min=1,max=150"`
-	Name     string `json:"name" validate:"max=150"`
+	Model    string `json:"model"    conform:"trim" validate:"required,min=1,max=150"`
+	Name     string `json:"name"     conform:"trim" validate:"max=150"`
 }
 
 type Model struct {
@@ -39,6 +40,8 @@ func NewModelModel(logger *slog.Logger, db queries.DBTX, validate *validator.Val
 }
 
 func (m *ModelModel) Create(ctx context.Context, model NewModel) (Model, error) {
+	conform.Strings(&model)
+
 	if err := m.validate.Struct(model); err != nil {
 		return Model{}, err
 	}
@@ -55,7 +58,12 @@ func (m *ModelModel) Create(ctx context.Context, model NewModel) (Model, error) 
 		if errors.As(err, &pgErr) {
 			// foreign_key_violation
 			if pgErr.Code == "23503" {
-				return Model{}, fmt.Errorf("failed to add model for vendor %d: %w", model.VendorID, ErrNotFound)
+				return Model{}, fmt.Errorf("failed to add model for vendor %d: %w", model.VendorID, ErrVendorNotFound)
+			}
+
+			// unique_violation
+			if pgErr.Code == "23505" {
+				return Model{}, fmt.Errorf("cannot add model %q to vendor %d: %w", model.Model, model.VendorID, ErrModelNotUnique)
 			}
 		}
 
@@ -124,6 +132,12 @@ func (m *ModelModel) ListModels(ctx context.Context) ([]Model, error) {
 }
 
 func (m *ModelModel) UpdateByID(ctx context.Context, id int64, model NewModel) (Model, error) {
+	conform.Strings(&model)
+
+	if err := m.validate.Struct(model); err != nil {
+		return Model{}, err
+	}
+
 	args := queries.UpdateModelByIDParams{
 		ID:       id,
 		Model:    model.Model,
@@ -135,6 +149,19 @@ func (m *ModelModel) UpdateByID(ctx context.Context, id int64, model NewModel) (
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Model{}, fmt.Errorf("no model with ID %d: %w", id, ErrNotFound)
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			// foreign_key_violation
+			if pgErr.Code == "23503" {
+				return Model{}, fmt.Errorf("failed to add model for vendor %d: %w", model.VendorID, ErrVendorNotFound)
+			}
+
+			// unique_violation
+			if pgErr.Code == "23505" {
+				return Model{}, fmt.Errorf("cannot add model %q to vendor %d: %w", model.Model, model.VendorID, ErrModelNotUnique)
+			}
 		}
 
 		return Model{}, fmt.Errorf("failed to update model: %v", err)
