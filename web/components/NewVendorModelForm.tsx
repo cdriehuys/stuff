@@ -1,17 +1,30 @@
 "use client";
 
-import apiClient from "@/api/apiClient";
-import { redirect } from "next/navigation";
-import ModelForm from "./ModelForm";
 import { components } from "@/api/api";
+import apiClient from "@/api/apiClient";
+import { apiErrorAsFormError } from "@/api/errors";
+import { createFormActions } from "@mantine/form";
+import { redirect } from "next/navigation";
+import ModelForm, { ModelFormValues } from "./ModelForm";
 
 interface Props {
   vendorID: number;
 }
 
+const formName = "new-vendor-model-form";
+const modelFormActions = createFormActions<ModelFormValues>(formName);
+
 export default function NewVendorModelForm({ vendorID }: Props) {
-  const mutation = apiClient.useMutation("post", "/models");
-  const mutate = (body: components["schemas"]["NewModel"]) =>
+  const mutation = apiClient.useMutation("post", "/models", {
+    onError: (error) => {
+      const formErrors = apiErrorAsFormError(error, ["model", "name"]);
+
+      for (const [field, errors] of Object.entries(formErrors)) {
+        modelFormActions.setFieldError(field, errors);
+      }
+    },
+  });
+  const mutate = (body: Omit<components["schemas"]["NewModel"], "vendorID">) =>
     mutation.mutate({ body: { ...body, vendorID } });
 
   if (mutation.isSuccess) {
@@ -19,5 +32,7 @@ export default function NewVendorModelForm({ vendorID }: Props) {
     redirect(next);
   }
 
-  return <ModelForm loading={mutation.isPending} onSubmit={mutate} />;
+  return (
+    <ModelForm loading={mutation.isPending} name={formName} onSubmit={mutate} />
+  );
 }

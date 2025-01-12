@@ -1,16 +1,19 @@
 "use client";
 
 import { components } from "@/api/api";
-import { Button, TextInput } from "@mantine/core";
+import { Alert, Button } from "@mantine/core";
 import { hasLength, useForm } from "@mantine/form";
+import TextInput from "./TextInput";
 
 interface Props {
   loading?: boolean;
+  name?: string;
   onSubmit: (vendor: components["schemas"]["NewVendor"]) => void;
 }
 
-export default function VendorForm({ loading, onSubmit }: Props) {
+export default function VendorForm({ loading, name, onSubmit }: Props) {
   const form = useForm({
+    name,
     mode: "uncontrolled",
     initialValues: {
       name: "",
@@ -25,6 +28,11 @@ export default function VendorForm({ loading, onSubmit }: Props) {
 
   return (
     <form onSubmit={form.onSubmit(onSubmit)}>
+      {form.errors.nonFieldErrors && (
+        <Alert mb="md" color="red">
+          {form.errors.nonFieldErrors}
+        </Alert>
+      )}
       <TextInput
         key={form.key("name")}
         label="Name"
