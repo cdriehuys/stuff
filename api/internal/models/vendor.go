@@ -10,10 +10,11 @@ import (
 	"github.com/cdriehuys/stuff/api/internal/models/queries"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
+	"github.com/leebenson/conform"
 )
 
 type NewVendor struct {
-	Name string `json:"name" validate:"required,min=1,max=150"`
+	Name string `json:"name" conform:"trim" validate:"required,min=1,max=150"`
 }
 
 type Vendor struct {
@@ -34,6 +35,8 @@ func NewVendorModel(logger *slog.Logger, db queries.DBTX, validate *validator.Va
 }
 
 func (m *VendorModel) Create(ctx context.Context, vendor NewVendor) (Vendor, error) {
+	conform.Strings(&vendor)
+
 	if err := m.validate.Struct(vendor); err != nil {
 		return Vendor{}, err
 	}

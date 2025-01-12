@@ -67,7 +67,7 @@ func (q *Queries) GetModelByID(ctx context.Context, id int64) (Model, error) {
 }
 
 const listModels = `-- name: ListModels :many
-SELECT id, model, vendor_id, name, created_at, updated_at FROM models ORDER BY id LIMIT 50
+SELECT id, model, vendor_id, name, created_at, updated_at FROM models ORDER BY model LIMIT 50
 `
 
 func (q *Queries) ListModels(ctx context.Context) ([]Model, error) {
@@ -100,7 +100,7 @@ func (q *Queries) ListModels(ctx context.Context) ([]Model, error) {
 const listModelsByVendorID = `-- name: ListModelsByVendorID :many
 SELECT id, model, vendor_id, name, created_at, updated_at FROM models
 WHERE vendor_id = $1
-ORDER BY id LIMIT 50
+ORDER BY model LIMIT 50
 `
 
 func (q *Queries) ListModelsByVendorID(ctx context.Context, vendorID int64) ([]Model, error) {

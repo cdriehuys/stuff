@@ -27,6 +27,22 @@ func (s *Server) PostModels(ctx context.Context, req PostModelsRequestObject) (P
 			return PostModels400JSONResponse{InvalidRequestJSONResponse(validationError(ve))}, nil
 		}
 
+		if errors.Is(err, models.ErrVendorNotFound) {
+			fields := []FieldError{
+				{Field: "vendorID", Message: "This vendor does not exist."},
+			}
+
+			return PostModels400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
+		}
+
+		if errors.Is(err, models.ErrModelNotUnique) {
+			fields := []FieldError{
+				{Field: "model", Message: "This model already exists for this vendor."},
+			}
+
+			return PostModels400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
+		}
+
 		s.logger.ErrorContext(ctx, "Failed to create model.", "error", err)
 		return PostModels500JSONResponse{}, nil
 	}
@@ -51,6 +67,27 @@ func (s *Server) PutModelsModelID(ctx context.Context, req PutModelsModelIDReque
 		if errors.Is(err, models.ErrNotFound) {
 			message := "Model does not exist."
 			return PutModelsModelID404JSONResponse{NotFoundJSONResponse{Message: &message}}, nil
+		}
+
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			return PutModelsModelID400JSONResponse{InvalidRequestJSONResponse(validationError(ve))}, nil
+		}
+
+		if errors.Is(err, models.ErrVendorNotFound) {
+			fields := []FieldError{
+				{Field: "vendorID", Message: "This vendor does not exist."},
+			}
+
+			return PutModelsModelID400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
+		}
+
+		if errors.Is(err, models.ErrModelNotUnique) {
+			fields := []FieldError{
+				{Field: "model", Message: "This model already exists for this vendor."},
+			}
+
+			return PutModelsModelID400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
 		}
 
 		s.logger.ErrorContext(ctx, "Failed to update model.", "error", err, "modelID", req.ModelID)
