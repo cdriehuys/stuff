@@ -1,5 +1,5 @@
-import { components } from "./api";
 import { ReactNode } from "react";
+import { components } from "./api";
 
 export interface FormErrors {
   nonFieldErrors?: ReactNode;
@@ -52,4 +52,36 @@ export const apiErrorAsFormError = (
   }
 
   return formErrors;
+};
+
+export const isAPIError = (
+  obj: unknown,
+): obj is components["schemas"]["APIError"] => {
+  if (obj === null || typeof obj !== "object") {
+    return false;
+  }
+
+  if ("fields" in obj && !Array.isArray(obj.fields)) {
+    return false;
+  }
+
+  if ("message" in obj && typeof obj.message !== "string") {
+    return false;
+  }
+
+  return true;
+};
+
+export const asAPIError = (
+  error: unknown,
+): components["schemas"]["APIError"] => {
+  if (isAPIError(error)) {
+    return error;
+  }
+
+  console.debug("Received unexpected error object:", error);
+
+  return {
+    message: "An unknown error occurred.",
+  };
 };

@@ -1,4 +1,4 @@
-import NewVendorForm from "@/components/NewVendorForm";
+import NewVendorForm from "@/features/vendors/NewVendorForm";
 import { Container, Title } from "@mantine/core";
 
 export default function NewVendorPage() {

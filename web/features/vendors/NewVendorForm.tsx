@@ -1,22 +1,29 @@
 "use client";
 
-import apiClient from "@/api/apiClient";
-import { redirect } from "next/navigation";
-import VendorForm from "./VendorForm";
+import { browserClient, NewVendor } from "@/api/client";
 import { apiErrorAsFormError } from "@/api/errors";
 import { createFormActions } from "@mantine/form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { redirect } from "next/navigation";
+import VendorForm from "../VendorForm";
+import { vendorKeys } from "./queries";
 
 const formName = "new-vendor-form";
 const vendorFormActions = createFormActions(formName);
 
 export default function NewVendorForm() {
-  const mutation = apiClient.useMutation("post", "/vendors", {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (vendor: NewVendor) => browserClient.createVendor(vendor),
     onError: (error) => {
-      const formErrors = apiErrorAsFormError(error, ["model", "name"]);
+      const formErrors = apiErrorAsFormError(error, ["name"]);
 
       for (const [field, errors] of Object.entries(formErrors)) {
         vendorFormActions.setFieldError(field, errors);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: vendorKeys.lists() });
     },
   });
 
@@ -29,7 +36,7 @@ export default function NewVendorForm() {
     <VendorForm
       loading={mutation.isPending}
       name={formName}
-      onSubmit={(vendor) => mutation.mutate({ body: vendor })}
+      onSubmit={mutation.mutate}
     />
   );
 }

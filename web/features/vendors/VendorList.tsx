@@ -1,11 +1,11 @@
 "use client";
 
 import { Table } from "@mantine/core";
-import apiClient from "@/api/apiClient";
-import Anchor from "./Anchor";
+import Anchor from "../Anchor";
+import { useVendorList } from "./queries";
 
 export default function VendorList() {
-  const query = apiClient.useQuery("get", "/vendors");
+  const query = useVendorList();
 
   return (
     <Table highlightOnHover striped>
@@ -15,7 +15,7 @@ export default function VendorList() {
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {query.data?.items.map((vendor) => (
+        {query.data?.data?.items.map((vendor) => (
           <Table.Tr key={vendor.id}>
             <Table.Td>
               <Anchor c="blue" href={`/vendors/${vendor.id}`}>
