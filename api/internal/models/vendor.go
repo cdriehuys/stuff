@@ -10,6 +10,7 @@ import (
 	"github.com/cdriehuys/stuff/api/internal/models/queries"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/leebenson/conform"
 )
 
@@ -54,6 +55,14 @@ func (m *VendorModel) Create(ctx context.Context, vendor NewVendor) (Vendor, err
 func (m *VendorModel) DeleteByID(ctx context.Context, id int64) error {
 	rows, err := m.queries.DeleteVendorByID(ctx, id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			// If a vendor has models `foreign_key_violation` will be raised if it's deleted.
+			if pgErr.Code == "23503" {
+				return fmt.Errorf("cannot delete vendor %d: %w", id, ErrVendorHasModels)
+			}
+		}
+
 		return fmt.Errorf("failed to delete vendor %d: %v", id, err)
 	}
 

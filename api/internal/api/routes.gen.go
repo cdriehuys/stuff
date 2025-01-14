@@ -764,6 +764,15 @@ func (response DeleteVendorsVendorID204Response) VisitDeleteVendorsVendorIDRespo
 	return nil
 }
 
+type DeleteVendorsVendorID400JSONResponse struct{ InvalidRequestJSONResponse }
+
+func (response DeleteVendorsVendorID400JSONResponse) VisitDeleteVendorsVendorIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteVendorsVendorID404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response DeleteVendorsVendorID404JSONResponse) VisitDeleteVendorsVendorIDResponse(w http.ResponseWriter) error {

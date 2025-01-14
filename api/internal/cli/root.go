@@ -17,15 +17,18 @@ import (
 	"github.com/cdriehuys/stuff/api/internal/models"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/text/language"
 )
 
-func NewRootCmd(logStream io.Writer, migrationFS fs.FS) *cobra.Command {
+func NewRootCmd(logStream io.Writer, localeFS fs.FS, migrationFS fs.FS) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stuff-api",
 		Short: "Run the stuff API",
-		RunE:  apiRunner(logStream),
+		RunE:  apiRunner(logStream, localeFS),
 	}
 
 	cmd.PersistentFlags().Bool("debug", false, "Enable debug logging")
@@ -43,9 +46,13 @@ func NewRootCmd(logStream io.Writer, migrationFS fs.FS) *cobra.Command {
 	return cmd
 }
 
-func apiRunner(logStream io.Writer) func(*cobra.Command, []string) error {
+func apiRunner(logStream io.Writer, localeFS fs.FS) func(*cobra.Command, []string) error {
 	return func(cli *cobra.Command, _ []string) error {
 		logger := createLogger(logStream)
+
+		bundle := i18n.NewBundle(language.English)
+		bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
+		bundle.LoadMessageFileFS(localeFS, "locale.*.toml")
 
 		pool, err := pgxpool.New(cli.Context(), viper.GetString("dsn"))
 		if err != nil {
@@ -67,9 +74,15 @@ func apiRunner(logStream io.Writer) func(*cobra.Command, []string) error {
 		modelModel := models.NewModelModel(logger, pool, validate)
 		vendorModel := models.NewVendorModel(logger, pool, validate)
 
-		server := api.NewServer(logger, modelModel, vendorModel)
+		server := api.NewServer(logger, bundle, validate, modelModel, vendorModel)
 
-		strictHandler := api.NewStrictHandler(server, nil)
+		strictHandler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
+			// Middleware are executed in order, so the panic recovery and error handling need to
+			// happen last.
+			server.LocalizationMiddleware(),
+			server.PanicRecoveryMiddleware(),
+			server.ErrorMiddleware(),
+		})
 		mux := http.NewServeMux()
 		handler := api.HandlerFromMux(strictHandler, mux)
 
