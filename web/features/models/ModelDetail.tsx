@@ -1,14 +1,18 @@
 "use client";
 
-import { Alert, Loader, Stack, Title } from "@mantine/core";
+import { Alert, Button, Group, Loader, Stack, Title } from "@mantine/core";
 import ModelDeleteButton from "./ModelDeleteButton";
 import { useModelByID } from "./queries";
+import Link from "next/link";
+import { IconPencil } from "@tabler/icons-react";
+import { usePathname } from "next/navigation";
 
 interface Props {
   modelID: number;
 }
 
 export default function ModelDetail({ modelID }: Props) {
+  const pathname = usePathname();
   const query = useModelByID(modelID);
 
   if (query.isError) {
@@ -44,7 +48,17 @@ export default function ModelDetail({ modelID }: Props) {
             </Title>
           )}
         </Stack>
-        <ModelDeleteButton model={model} />
+        <Group>
+          <Button
+            component={Link}
+            href={`${pathname}/edit`}
+            leftSection={<IconPencil />}
+            size="compact-md"
+          >
+            Edit
+          </Button>
+          <ModelDeleteButton model={model} />
+        </Group>
       </>
     );
   }

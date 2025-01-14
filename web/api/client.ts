@@ -29,6 +29,19 @@ class APIClient {
     );
   }
 
+  async updateModelByID(id: number, model: NewModel) {
+    const { data, error } = await this.base.PUT("/models/{modelID}", {
+      body: model,
+      params: { path: { modelID: id } },
+    });
+
+    if (error !== undefined) {
+      throw error;
+    }
+
+    return data;
+  }
+
   async deleteModelByID(id: number) {
     const { error, response } = await this.base.DELETE("/models/{modelID}", {
       params: { path: { modelID: id } },

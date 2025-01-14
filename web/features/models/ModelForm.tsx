@@ -1,12 +1,16 @@
 "use client";
 
 import { components } from "@/api/api";
-import { Alert, Button } from "@mantine/core";
+import { Alert, Button, Group } from "@mantine/core";
 import { hasLength, useForm } from "@mantine/form";
-import TextInput from "./TextInput";
+import TextInput from "../TextInput";
+import { NewModel } from "@/api/client";
+import { ReactNode } from "react";
 
 interface Props {
+  actions?: ReactNode;
   loading?: boolean;
+  model?: Partial<NewModel>;
   name?: string;
   onSubmit: (
     model: Omit<components["schemas"]["NewModel"], "vendorID">,
@@ -18,13 +22,19 @@ export interface ModelFormValues {
   name: string;
 }
 
-export default function ModelForm({ loading, name, onSubmit }: Props) {
+export default function ModelForm({
+  actions,
+  loading,
+  model,
+  name,
+  onSubmit,
+}: Props) {
   const form = useForm<ModelFormValues>({
     name,
     mode: "uncontrolled",
     initialValues: {
-      model: "",
-      name: "",
+      model: model?.model ?? "",
+      name: model?.name ?? "",
     },
     validate: {
       model: hasLength(
@@ -57,9 +67,12 @@ export default function ModelForm({ loading, name, onSubmit }: Props) {
         mb="md"
         {...form.getInputProps("name")}
       />
-      <Button loading={loading} type="submit">
-        Submit
-      </Button>
+      <Group justify="space-between">
+        <Button loading={loading} type="submit">
+          Submit
+        </Button>
+        {actions}
+      </Group>
     </form>
   );
 }
