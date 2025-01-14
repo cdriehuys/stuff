@@ -6,13 +6,13 @@ import (
 
 	"github.com/cdriehuys/stuff/api/internal/models"
 	"github.com/go-playground/validator/v10"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func (s *Server) GetModels(ctx context.Context, req GetModelsRequestObject) (GetModelsResponseObject, error) {
 	models, err := s.models.ListModels(ctx)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to list models.", "error", err)
-		return GetModels500JSONResponse{}, nil
+		return GetModels500JSONResponse{}, err
 	}
 
 	return GetModels200JSONResponse(modelCollection(models)), nil
@@ -24,27 +24,18 @@ func (s *Server) PostModels(ctx context.Context, req PostModelsRequestObject) (P
 	if err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			return PostModels400JSONResponse{InvalidRequestJSONResponse(validationError(ve))}, nil
+			return PostModels400JSONResponse{InvalidRequestJSONResponse(s.validationError(ctx, ve))}, nil
 		}
 
 		if errors.Is(err, models.ErrVendorNotFound) {
-			fields := []FieldError{
-				{Field: "vendorID", Message: "This vendor does not exist."},
-			}
-
-			return PostModels400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
+			return PostModels400JSONResponse{s.modelVendorNotFound(ctx)}, nil
 		}
 
 		if errors.Is(err, models.ErrModelNotUnique) {
-			fields := []FieldError{
-				{Field: "model", Message: "This model already exists for this vendor."},
-			}
-
-			return PostModels400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
+			return PostModels400JSONResponse{s.modelNotUnique(ctx, model.Model)}, nil
 		}
 
-		s.logger.ErrorContext(ctx, "Failed to create model.", "error", err)
-		return PostModels500JSONResponse{}, nil
+		return PostModels500JSONResponse{}, err
 	}
 
 	return PostModels201JSONResponse(externalModel(newModel)), nil
@@ -53,8 +44,7 @@ func (s *Server) PostModels(ctx context.Context, req PostModelsRequestObject) (P
 func (s *Server) GetModelsModelID(ctx context.Context, req GetModelsModelIDRequestObject) (GetModelsModelIDResponseObject, error) {
 	model, err := s.models.GetByID(ctx, int64(req.ModelID))
 	if err != nil {
-		s.logger.ErrorContext(ctx, "Failed to get model by ID.", "error", "err", "modelID", req.ModelID)
-		return GetModelsModelID500JSONResponse{}, nil
+		return GetModelsModelID500JSONResponse{}, err
 	}
 
 	return GetModelsModelID200JSONResponse(externalModel(model)), nil
@@ -65,33 +55,23 @@ func (s *Server) PutModelsModelID(ctx context.Context, req PutModelsModelIDReque
 	model, err := s.models.UpdateByID(ctx, int64(req.ModelID), update)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			message := "Model does not exist."
-			return PutModelsModelID404JSONResponse{NotFoundJSONResponse{Message: &message}}, nil
+			return PutModelsModelID404JSONResponse{s.modelNotFoundByID(ctx, req.ModelID)}, nil
 		}
 
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			return PutModelsModelID400JSONResponse{InvalidRequestJSONResponse(validationError(ve))}, nil
+			return PutModelsModelID400JSONResponse{InvalidRequestJSONResponse(s.validationError(ctx, ve))}, nil
 		}
 
 		if errors.Is(err, models.ErrVendorNotFound) {
-			fields := []FieldError{
-				{Field: "vendorID", Message: "This vendor does not exist."},
-			}
-
-			return PutModelsModelID400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
+			return PutModelsModelID400JSONResponse{s.modelVendorNotFound(ctx)}, nil
 		}
 
 		if errors.Is(err, models.ErrModelNotUnique) {
-			fields := []FieldError{
-				{Field: "model", Message: "This model already exists for this vendor."},
-			}
-
-			return PutModelsModelID400JSONResponse{InvalidRequestJSONResponse{Fields: &fields}}, nil
+			return PutModelsModelID400JSONResponse{s.modelNotUnique(ctx, update.Model)}, nil
 		}
 
-		s.logger.ErrorContext(ctx, "Failed to update model.", "error", err, "modelID", req.ModelID)
-		return PutModelsModelID500JSONResponse{}, nil
+		return PutModelsModelID500JSONResponse{}, err
 	}
 
 	return PutModelsModelID200JSONResponse(externalModel(model)), nil
@@ -101,12 +81,10 @@ func (s *Server) DeleteModelsModelID(ctx context.Context, req DeleteModelsModelI
 	err := s.models.DeleteByID(ctx, int64(req.ModelID))
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			message := "Model does not exist."
-			return DeleteModelsModelID404JSONResponse{NotFoundJSONResponse{Message: &message}}, nil
+			return DeleteModelsModelID404JSONResponse{s.modelNotFoundByID(ctx, req.ModelID)}, nil
 		}
 
-		s.logger.ErrorContext(ctx, "Failed to delete model.", "error", err, "modelID", req.ModelID)
-		return DeleteModelsModelID500JSONResponse{}, nil
+		return DeleteModelsModelID500JSONResponse{}, err
 	}
 
 	return DeleteModelsModelID204Response{}, nil
@@ -143,4 +121,47 @@ func internalNewModel(model NewModel) models.NewModel {
 	}
 
 	return internal
+}
+
+func (s *Server) modelNotFoundByID(ctx context.Context, id int) NotFoundJSONResponse {
+	message := s.mustLocalize(ctx, &i18n.LocalizeConfig{
+		DefaultMessage: &i18n.Message{
+			ID:    "model.error.notFoundByID",
+			Other: "Model {{.ID}} does not exist.",
+		},
+		TemplateData: map[string]int{
+			"ID": id,
+		},
+	})
+
+	return NotFoundJSONResponse(APIError{Message: &message})
+}
+
+func (s *Server) modelVendorNotFound(ctx context.Context) InvalidRequestJSONResponse {
+	fields := []FieldError{
+		{Field: "vendorID", Message: s.mustLocalize(ctx, &i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "model.error.vendorNotFound",
+				Other: "This vendor does not exist.",
+			},
+		})},
+	}
+
+	return InvalidRequestJSONResponse{Fields: &fields}
+}
+
+func (s *Server) modelNotUnique(ctx context.Context, model string) InvalidRequestJSONResponse {
+	fields := []FieldError{
+		{Field: "model", Message: s.mustLocalize(ctx, &i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "model.error.modelNotUnique",
+				Other: "This vendor already has the model '{{.Model}}'.",
+			},
+			TemplateData: map[any]string{
+				"Model": model,
+			},
+		})},
+	}
+
+	return InvalidRequestJSONResponse{Fields: &fields}
 }

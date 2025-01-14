@@ -271,6 +271,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                400: components["responses"]["InvalidRequest"];
                 404: components["responses"]["NotFound"];
                 500: components["responses"]["ServerError"];
             };

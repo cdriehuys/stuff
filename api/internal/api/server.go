@@ -3,11 +3,10 @@ package api
 import (
 	"context"
 	"log/slog"
-	"reflect"
-	"strings"
 
 	"github.com/cdriehuys/stuff/api/internal/models"
 	"github.com/go-playground/validator/v10"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // ensure we're implementing the generated interface
@@ -30,26 +29,26 @@ type vendorModel interface {
 }
 
 type Server struct {
-	logger  *slog.Logger
+	logger *slog.Logger
+	bundle *i18n.Bundle
+
 	models  modelModel
 	vendors vendorModel
 
 	validate *validator.Validate
 }
 
-func NewServer(logger *slog.Logger, models modelModel, vendors vendorModel) *Server {
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		// skip if tag key says it should be ignored
-		if name == "-" {
-			return ""
-		}
-		return name
-	})
-
+func NewServer(
+	logger *slog.Logger,
+	bundle *i18n.Bundle,
+	validate *validator.Validate,
+	models modelModel,
+	vendors vendorModel,
+) *Server {
 	return &Server{
-		logger:  logger,
+		logger: logger,
+		bundle: bundle,
+
 		models:  models,
 		vendors: vendors,
 
