@@ -8,6 +8,15 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+      # Required for the health check to not spam `role "root" does not exist
+      PGUSER: postgres
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
     volumes:
       - database:/var/lib/postgresql/data
@@ -24,7 +33,7 @@ services:
 
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
 
   api:
     build:
