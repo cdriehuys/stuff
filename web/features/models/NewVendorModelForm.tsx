@@ -5,8 +5,8 @@ import { apiErrorAsFormError } from "@/api/errors";
 import { createFormActions } from "@mantine/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
-import ModelForm, { ModelFormValues } from "../ModelForm";
 import { modelKeys } from "./queries";
+import ModelForm, { ModelFormValues } from "./ModelForm";
 
 interface Props {
   vendorID: number;
