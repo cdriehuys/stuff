@@ -10,7 +10,7 @@ import (
 
 type Asset struct {
 	ID        int64
-	ModelID   pgtype.Int8
+	ModelID   int64
 	Serial    string
 	Comments  string
 	CreatedAt pgtype.Timestamptz

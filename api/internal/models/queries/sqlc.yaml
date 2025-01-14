@@ -2,6 +2,7 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries:
+      - "assets.sql"
       - "models.sql"
       - "vendors.sql"
     schema: "../../../migrations"

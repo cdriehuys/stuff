@@ -8,6 +8,93 @@ servers:
     description: Local development
 
 paths:
+  /assets:
+    get:
+      responses:
+        "200":
+          description: Asset list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetCollection"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      summary: Create asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewAsset"
+      responses:
+        "201":
+          description: Asset created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /assets/{assetID}:
+    parameters:
+      - name: assetID
+        in: path
+        required: true
+        schema:
+          type: integer
+          description: The ID of the asset to operate on.
+          example: 42
+
+    get:
+      responses:
+        "200":
+          description: Asset found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewAsset"
+      responses:
+        "200":
+          description: Asset updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      responses:
+        "204":
+          description: Asset deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /models:
     get:
       responses:
@@ -90,6 +177,8 @@ paths:
       responses:
         "204":
           description: Model deleted
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -208,6 +297,65 @@ components:
             $ref: "#/components/schemas/APIError"
 
   schemas:
+    Asset:
+      type: object
+      required:
+        - id
+        - modelID
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          description: A unique identifier for the asset.
+          example: 12
+        modelID:
+          type: integer
+          description: The ID of the model that this asset is an instance of.
+          example: 17
+        serial:
+          type: string
+          description: The asset's serial number.
+        comments:
+          type: string
+          description: Free text relating to the asset.
+        createdAt:
+          type: string
+          format: date-time
+          description: The instant the vendor was added to the system.
+        updatedAt:
+          type: string
+          format: date-time
+          description: The instant the vendor's information was last updated.
+
+    NewAsset:
+      type: object
+      required:
+        - modelID
+        - serial
+      properties:
+        modelID:
+          type: integer
+          description: The ID of the model that this asset is an instance of.
+          example: 17
+        serial:
+          type: string
+          description: The asset's serial number.
+        comments:
+          type: string
+          description: Free text relating to the asset.
+          example: Only works if facing west.
+
+    AssetCollection:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Asset"
+
     Model:
       type: object
       required:

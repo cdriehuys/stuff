@@ -78,6 +78,14 @@ func (m *ModelModel) Create(ctx context.Context, model NewModel) (Model, error) 
 func (m *ModelModel) DeleteByID(ctx context.Context, id int64) error {
 	rows, err := m.q.DeleteModelByID(ctx, id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			// foreign_key_violation
+			if pgErr.Code == "23503" {
+				return fmt.Errorf("failed to delete model %d: %w", id, ErrModelHasAssets)
+			}
+		}
+
 		return fmt.Errorf("failed to delete model %d: %v", id, err)
 	}
 

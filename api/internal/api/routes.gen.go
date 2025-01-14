@@ -25,6 +25,32 @@ type APIError struct {
 	Message *string `json:"message,omitempty"`
 }
 
+// Asset defines model for Asset.
+type Asset struct {
+	// Comments Free text relating to the asset.
+	Comments *string `json:"comments,omitempty"`
+
+	// CreatedAt The instant the vendor was added to the system.
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Id A unique identifier for the asset.
+	Id int `json:"id"`
+
+	// ModelID The ID of the model that this asset is an instance of.
+	ModelID int `json:"modelID"`
+
+	// Serial The asset's serial number.
+	Serial *string `json:"serial,omitempty"`
+
+	// UpdatedAt The instant the vendor's information was last updated.
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// AssetCollection defines model for AssetCollection.
+type AssetCollection struct {
+	Items []Asset `json:"items"`
+}
+
 // FieldError defines model for FieldError.
 type FieldError struct {
 	// Field The name of a field that failed validation.
@@ -58,6 +84,18 @@ type Model struct {
 // ModelCollection defines model for ModelCollection.
 type ModelCollection struct {
 	Items []Model `json:"items"`
+}
+
+// NewAsset defines model for NewAsset.
+type NewAsset struct {
+	// Comments Free text relating to the asset.
+	Comments *string `json:"comments,omitempty"`
+
+	// ModelID The ID of the model that this asset is an instance of.
+	ModelID int `json:"modelID"`
+
+	// Serial The asset's serial number.
+	Serial string `json:"serial"`
 }
 
 // NewModel defines model for NewModel.
@@ -107,6 +145,12 @@ type NotFound = APIError
 // ServerError defines model for ServerError.
 type ServerError = APIError
 
+// PostAssetsJSONRequestBody defines body for PostAssets for application/json ContentType.
+type PostAssetsJSONRequestBody = NewAsset
+
+// PutAssetsAssetIDJSONRequestBody defines body for PutAssetsAssetID for application/json ContentType.
+type PutAssetsAssetIDJSONRequestBody = NewAsset
+
 // PostModelsJSONRequestBody defines body for PostModels for application/json ContentType.
 type PostModelsJSONRequestBody = NewModel
 
@@ -118,6 +162,21 @@ type PostVendorsJSONRequestBody = NewVendor
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /assets)
+	GetAssets(w http.ResponseWriter, r *http.Request)
+	// Create asset
+	// (POST /assets)
+	PostAssets(w http.ResponseWriter, r *http.Request)
+
+	// (DELETE /assets/{assetID})
+	DeleteAssetsAssetID(w http.ResponseWriter, r *http.Request, assetID int)
+
+	// (GET /assets/{assetID})
+	GetAssetsAssetID(w http.ResponseWriter, r *http.Request, assetID int)
+
+	// (PUT /assets/{assetID})
+	PutAssetsAssetID(w http.ResponseWriter, r *http.Request, assetID int)
 
 	// (GET /models)
 	GetModels(w http.ResponseWriter, r *http.Request)
@@ -158,6 +217,109 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetAssets operation middleware
+func (siw *ServerInterfaceWrapper) GetAssets(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAssets(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAssets operation middleware
+func (siw *ServerInterfaceWrapper) PostAssets(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAssets(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteAssetsAssetID operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAssetsAssetID(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "assetID" -------------
+	var assetID int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assetID", r.PathValue("assetID"), &assetID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assetID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteAssetsAssetID(w, r, assetID)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAssetsAssetID operation middleware
+func (siw *ServerInterfaceWrapper) GetAssetsAssetID(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "assetID" -------------
+	var assetID int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assetID", r.PathValue("assetID"), &assetID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assetID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAssetsAssetID(w, r, assetID)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutAssetsAssetID operation middleware
+func (siw *ServerInterfaceWrapper) PutAssetsAssetID(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "assetID" -------------
+	var assetID int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assetID", r.PathValue("assetID"), &assetID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assetID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutAssetsAssetID(w, r, assetID)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetModels operation middleware
 func (siw *ServerInterfaceWrapper) GetModels(w http.ResponseWriter, r *http.Request) {
@@ -485,6 +647,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	m.HandleFunc("GET "+options.BaseURL+"/assets", wrapper.GetAssets)
+	m.HandleFunc("POST "+options.BaseURL+"/assets", wrapper.PostAssets)
+	m.HandleFunc("DELETE "+options.BaseURL+"/assets/{assetID}", wrapper.DeleteAssetsAssetID)
+	m.HandleFunc("GET "+options.BaseURL+"/assets/{assetID}", wrapper.GetAssetsAssetID)
+	m.HandleFunc("PUT "+options.BaseURL+"/assets/{assetID}", wrapper.PutAssetsAssetID)
 	m.HandleFunc("GET "+options.BaseURL+"/models", wrapper.GetModels)
 	m.HandleFunc("POST "+options.BaseURL+"/models", wrapper.PostModels)
 	m.HandleFunc("DELETE "+options.BaseURL+"/models/{modelID}", wrapper.DeleteModelsModelID)
@@ -504,6 +671,189 @@ type InvalidRequestJSONResponse APIError
 type NotFoundJSONResponse APIError
 
 type ServerErrorJSONResponse APIError
+
+type GetAssetsRequestObject struct {
+}
+
+type GetAssetsResponseObject interface {
+	VisitGetAssetsResponse(w http.ResponseWriter) error
+}
+
+type GetAssets200JSONResponse AssetCollection
+
+func (response GetAssets200JSONResponse) VisitGetAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAssets500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response GetAssets500JSONResponse) VisitGetAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostAssetsRequestObject struct {
+	Body *PostAssetsJSONRequestBody
+}
+
+type PostAssetsResponseObject interface {
+	VisitPostAssetsResponse(w http.ResponseWriter) error
+}
+
+type PostAssets201JSONResponse Asset
+
+func (response PostAssets201JSONResponse) VisitPostAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostAssets400JSONResponse struct{ InvalidRequestJSONResponse }
+
+func (response PostAssets400JSONResponse) VisitPostAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostAssets404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PostAssets404JSONResponse) VisitPostAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostAssets500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response PostAssets500JSONResponse) VisitPostAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteAssetsAssetIDRequestObject struct {
+	AssetID int `json:"assetID"`
+}
+
+type DeleteAssetsAssetIDResponseObject interface {
+	VisitDeleteAssetsAssetIDResponse(w http.ResponseWriter) error
+}
+
+type DeleteAssetsAssetID204Response struct {
+}
+
+func (response DeleteAssetsAssetID204Response) VisitDeleteAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAssetsAssetID404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteAssetsAssetID404JSONResponse) VisitDeleteAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteAssetsAssetID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response DeleteAssetsAssetID500JSONResponse) VisitDeleteAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAssetsAssetIDRequestObject struct {
+	AssetID int `json:"assetID"`
+}
+
+type GetAssetsAssetIDResponseObject interface {
+	VisitGetAssetsAssetIDResponse(w http.ResponseWriter) error
+}
+
+type GetAssetsAssetID200JSONResponse Asset
+
+func (response GetAssetsAssetID200JSONResponse) VisitGetAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAssetsAssetID404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetAssetsAssetID404JSONResponse) VisitGetAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAssetsAssetID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response GetAssetsAssetID500JSONResponse) VisitGetAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutAssetsAssetIDRequestObject struct {
+	AssetID int `json:"assetID"`
+	Body    *PutAssetsAssetIDJSONRequestBody
+}
+
+type PutAssetsAssetIDResponseObject interface {
+	VisitPutAssetsAssetIDResponse(w http.ResponseWriter) error
+}
+
+type PutAssetsAssetID200JSONResponse Asset
+
+func (response PutAssetsAssetID200JSONResponse) VisitPutAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutAssetsAssetID400JSONResponse struct{ InvalidRequestJSONResponse }
+
+func (response PutAssetsAssetID400JSONResponse) VisitPutAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutAssetsAssetID404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PutAssetsAssetID404JSONResponse) VisitPutAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutAssetsAssetID500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response PutAssetsAssetID500JSONResponse) VisitPutAssetsAssetIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
 
 type GetModelsRequestObject struct {
 }
@@ -588,6 +938,15 @@ type DeleteModelsModelID204Response struct {
 func (response DeleteModelsModelID204Response) VisitDeleteModelsModelIDResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
+}
+
+type DeleteModelsModelID400JSONResponse struct{ InvalidRequestJSONResponse }
+
+func (response DeleteModelsModelID400JSONResponse) VisitDeleteModelsModelIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type DeleteModelsModelID404JSONResponse struct{ NotFoundJSONResponse }
@@ -864,6 +1223,21 @@ func (response GetVendorsVendorIDModels500JSONResponse) VisitGetVendorsVendorIDM
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /assets)
+	GetAssets(ctx context.Context, request GetAssetsRequestObject) (GetAssetsResponseObject, error)
+	// Create asset
+	// (POST /assets)
+	PostAssets(ctx context.Context, request PostAssetsRequestObject) (PostAssetsResponseObject, error)
+
+	// (DELETE /assets/{assetID})
+	DeleteAssetsAssetID(ctx context.Context, request DeleteAssetsAssetIDRequestObject) (DeleteAssetsAssetIDResponseObject, error)
+
+	// (GET /assets/{assetID})
+	GetAssetsAssetID(ctx context.Context, request GetAssetsAssetIDRequestObject) (GetAssetsAssetIDResponseObject, error)
+
+	// (PUT /assets/{assetID})
+	PutAssetsAssetID(ctx context.Context, request PutAssetsAssetIDRequestObject) (PutAssetsAssetIDResponseObject, error)
+
 	// (GET /models)
 	GetModels(ctx context.Context, request GetModelsRequestObject) (GetModelsResponseObject, error)
 	// Create model
@@ -922,6 +1296,146 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GetAssets operation middleware
+func (sh *strictHandler) GetAssets(w http.ResponseWriter, r *http.Request) {
+	var request GetAssetsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAssets(ctx, request.(GetAssetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAssets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAssetsResponseObject); ok {
+		if err := validResponse.VisitGetAssetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAssets operation middleware
+func (sh *strictHandler) PostAssets(w http.ResponseWriter, r *http.Request) {
+	var request PostAssetsRequestObject
+
+	var body PostAssetsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAssets(ctx, request.(PostAssetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAssets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAssetsResponseObject); ok {
+		if err := validResponse.VisitPostAssetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteAssetsAssetID operation middleware
+func (sh *strictHandler) DeleteAssetsAssetID(w http.ResponseWriter, r *http.Request, assetID int) {
+	var request DeleteAssetsAssetIDRequestObject
+
+	request.AssetID = assetID
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAssetsAssetID(ctx, request.(DeleteAssetsAssetIDRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAssetsAssetID")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteAssetsAssetIDResponseObject); ok {
+		if err := validResponse.VisitDeleteAssetsAssetIDResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAssetsAssetID operation middleware
+func (sh *strictHandler) GetAssetsAssetID(w http.ResponseWriter, r *http.Request, assetID int) {
+	var request GetAssetsAssetIDRequestObject
+
+	request.AssetID = assetID
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAssetsAssetID(ctx, request.(GetAssetsAssetIDRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAssetsAssetID")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAssetsAssetIDResponseObject); ok {
+		if err := validResponse.VisitGetAssetsAssetIDResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutAssetsAssetID operation middleware
+func (sh *strictHandler) PutAssetsAssetID(w http.ResponseWriter, r *http.Request, assetID int) {
+	var request PutAssetsAssetIDRequestObject
+
+	request.AssetID = assetID
+
+	var body PutAssetsAssetIDJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutAssetsAssetID(ctx, request.(PutAssetsAssetIDRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutAssetsAssetID")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutAssetsAssetIDResponseObject); ok {
+		if err := validResponse.VisitPutAssetsAssetIDResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetModels operation middleware

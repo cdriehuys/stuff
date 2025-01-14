@@ -4,6 +4,159 @@
  */
 
 export interface paths {
+    "/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Asset list */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AssetCollection"];
+                    };
+                };
+                500: components["responses"]["ServerError"];
+            };
+        };
+        put?: never;
+        /** Create asset */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewAsset"];
+                };
+            };
+            responses: {
+                /** @description Asset created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Asset"];
+                    };
+                };
+                400: components["responses"]["InvalidRequest"];
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets/{assetID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assetID: number;
+            };
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    assetID: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Asset found */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Asset"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    assetID: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewAsset"];
+                };
+            };
+            responses: {
+                /** @description Asset updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Asset"];
+                    };
+                };
+                400: components["responses"]["InvalidRequest"];
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    assetID: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Asset deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/models": {
         parameters: {
             query?: never;
@@ -148,6 +301,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                400: components["responses"]["InvalidRequest"];
                 404: components["responses"]["NotFound"];
                 500: components["responses"]["ServerError"];
             };
@@ -327,6 +481,49 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Asset: {
+            /**
+             * @description A unique identifier for the asset.
+             * @example 12
+             */
+            id: number;
+            /**
+             * @description The ID of the model that this asset is an instance of.
+             * @example 17
+             */
+            modelID: number;
+            /** @description The asset's serial number. */
+            serial?: string;
+            /** @description Free text relating to the asset. */
+            comments?: string;
+            /**
+             * Format: date-time
+             * @description The instant the vendor was added to the system.
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description The instant the vendor's information was last updated.
+             */
+            updatedAt: string;
+        };
+        NewAsset: {
+            /**
+             * @description The ID of the model that this asset is an instance of.
+             * @example 17
+             */
+            modelID: number;
+            /** @description The asset's serial number. */
+            serial: string;
+            /**
+             * @description Free text relating to the asset.
+             * @example Only works if facing west.
+             */
+            comments?: string;
+        };
+        AssetCollection: {
+            items: components["schemas"]["Asset"][];
+        };
         Model: {
             /** @description A unique identifier for the model. */
             id: number;
