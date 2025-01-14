@@ -24,7 +24,7 @@ func (s *Server) PostModels(ctx context.Context, req PostModelsRequestObject) (P
 	if err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			return PostModels400JSONResponse{InvalidRequestJSONResponse(s.validationError(ctx, ve))}, nil
+			return PostModels400JSONResponse{s.validationError(ctx, ve)}, nil
 		}
 
 		if errors.Is(err, models.ErrVendorNotFound) {
@@ -82,6 +82,16 @@ func (s *Server) DeleteModelsModelID(ctx context.Context, req DeleteModelsModelI
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			return DeleteModelsModelID404JSONResponse{s.modelNotFoundByID(ctx, req.ModelID)}, nil
+		}
+
+		if errors.Is(err, models.ErrModelHasAssets) {
+			message := s.mustLocalize(ctx, &i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "model.error.deleteWithAssets",
+					Other: "This model cannot be deleted because it contains assets.",
+				},
+			})
+			return DeleteModelsModelID400JSONResponse{InvalidRequestJSONResponse{Message: &message}}, nil
 		}
 
 		return DeleteModelsModelID500JSONResponse{}, err

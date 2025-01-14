@@ -12,6 +12,14 @@ import (
 // ensure we're implementing the generated interface
 var _ StrictServerInterface = (*Server)(nil)
 
+type assetModel interface {
+	Create(ctx context.Context, asset models.NewAsset) (models.Asset, error)
+	DeleteByID(ctx context.Context, id int64) error
+	GetByID(ctx context.Context, id int64) (models.Asset, error)
+	List(ctx context.Context) ([]models.Asset, error)
+	UpdateByID(ctx context.Context, id int64, updated models.NewAsset) (models.Asset, error)
+}
+
 type modelModel interface {
 	Create(ctx context.Context, model models.NewModel) (models.Model, error)
 	DeleteByID(ctx context.Context, id int64) error
@@ -32,6 +40,7 @@ type Server struct {
 	logger *slog.Logger
 	bundle *i18n.Bundle
 
+	assets  assetModel
 	models  modelModel
 	vendors vendorModel
 
@@ -42,6 +51,7 @@ func NewServer(
 	logger *slog.Logger,
 	bundle *i18n.Bundle,
 	validate *validator.Validate,
+	assets assetModel,
 	models modelModel,
 	vendors vendorModel,
 ) *Server {
@@ -49,6 +59,7 @@ func NewServer(
 		logger: logger,
 		bundle: bundle,
 
+		assets:  assets,
 		models:  models,
 		vendors: vendors,
 

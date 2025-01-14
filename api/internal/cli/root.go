@@ -71,10 +71,11 @@ func apiRunner(logStream io.Writer, localeFS fs.FS) func(*cobra.Command, []strin
 			return name
 		})
 
+		assetModel := models.NewAssetModel(logger, pool, validate)
 		modelModel := models.NewModelModel(logger, pool, validate)
 		vendorModel := models.NewVendorModel(logger, pool, validate)
 
-		server := api.NewServer(logger, bundle, validate, modelModel, vendorModel)
+		server := api.NewServer(logger, bundle, validate, assetModel, modelModel, vendorModel)
 
 		strictHandler := api.NewStrictHandler(server, []api.StrictMiddlewareFunc{
 			// Middleware are executed in order, so the panic recovery and error handling need to
