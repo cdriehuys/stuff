@@ -1,9 +1,9 @@
 "use client";
 
-import { useVendorByID } from "@/api/queries";
 import { Breadcrumbs, Skeleton, Text } from "@mantine/core";
 import { ReactNode } from "react";
-import Anchor from "./Anchor";
+import Anchor from "../Anchor";
+import { useVendorByID } from "./queries";
 
 interface Props {
   children?: ReactNode;
@@ -16,11 +16,11 @@ export default function VendorBreadcrumbs({ children, vendorID }: Props) {
   return (
     <Breadcrumbs mb="lg">
       <Anchor href="/vendors">Vendors</Anchor>
-      {query.data?.name ? (
+      {query.data?.data?.name ? (
         children ? (
-          <Anchor href={`/vendors/${vendorID}`}>{query.data.name}</Anchor>
+          <Anchor href={`/vendors/${vendorID}`}>{query.data.data.name}</Anchor>
         ) : (
-          <Text>{query.data.name}</Text>
+          <Text>{query.data.data.name}</Text>
         )
       ) : query.isLoading ? (
         <Skeleton width={60} height={16} />

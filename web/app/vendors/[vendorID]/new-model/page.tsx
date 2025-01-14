@@ -1,5 +1,5 @@
-import NewVendorModelForm from "@/components/NewVendorModelForm";
-import VendorBreadcrumbs from "@/components/VendorBreadcrumbs";
+import NewVendorModelForm from "@/features/models/NewVendorModelForm";
+import VendorBreadcrumbs from "@/features/vendors/VendorBreadcrumbs";
 import { Container, Text, Title } from "@mantine/core";
 
 interface Props {

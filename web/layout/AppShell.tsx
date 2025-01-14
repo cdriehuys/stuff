@@ -1,6 +1,6 @@
 "use client";
 
-import NavLink from "@/components/NavLink";
+import NavLink from "@/features/NavLink";
 import {
   AppShell as AppShellBase,
   Burger,

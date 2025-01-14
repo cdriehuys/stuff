@@ -1,11 +1,12 @@
 "use client";
 
-import { components } from "@/api/api";
-import apiClient from "@/api/apiClient";
+import { browserClient, NewModel } from "@/api/client";
 import { apiErrorAsFormError } from "@/api/errors";
 import { createFormActions } from "@mantine/form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
-import ModelForm, { ModelFormValues } from "./ModelForm";
+import ModelForm, { ModelFormValues } from "../ModelForm";
+import { modelKeys } from "./queries";
 
 interface Props {
   vendorID: number;
@@ -15,7 +16,9 @@ const formName = "new-vendor-model-form";
 const modelFormActions = createFormActions<ModelFormValues>(formName);
 
 export default function NewVendorModelForm({ vendorID }: Props) {
-  const mutation = apiClient.useMutation("post", "/models", {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (model: NewModel) => browserClient.createModel(model),
     onError: (error) => {
       const formErrors = apiErrorAsFormError(error, ["model", "name"]);
 
@@ -23,9 +26,12 @@ export default function NewVendorModelForm({ vendorID }: Props) {
         modelFormActions.setFieldError(field, errors);
       }
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelKeys.lists() });
+    },
   });
-  const mutate = (body: Omit<components["schemas"]["NewModel"], "vendorID">) =>
-    mutation.mutate({ body: { ...body, vendorID } });
+  const mutate = (body: Omit<NewModel, "vendorID">) =>
+    mutation.mutate({ ...body, vendorID });
 
   if (mutation.isSuccess) {
     const next = `/vendors/${vendorID}/models/${mutation.data.id}`;

@@ -1,32 +1,31 @@
 import { getServerClient } from "@/api/client";
-import { modelKeys } from "@/features/models/queries";
-import VendorBreadcrumbs from "@/features/vendors/VendorBreadcrumbs";
-import VendorDetail from "@/features/vendors/VendorDetail";
+import { vendorKeys } from "@/features/vendors/queries";
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import { ReactNode } from "react";
 
 interface Props {
+  children: ReactNode;
   params: Promise<{ vendorID: string }>;
 }
 
-export default async function VendorDetailPage({ params }: Props) {
+export default async function VendorDetailLayout({ children, params }: Props) {
   const vendorID = parseInt((await params).vendorID);
 
   const queryClient = new QueryClient();
   const api = getServerClient();
 
   await queryClient.prefetchQuery({
-    queryKey: modelKeys.list({ vendorID }),
-    queryFn: () => api.getModelsByVendor(vendorID),
+    queryKey: vendorKeys.detail(vendorID),
+    queryFn: () => api.getVendorByID(vendorID),
   });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <VendorBreadcrumbs vendorID={vendorID} />
-      <VendorDetail vendorID={vendorID} />
+      {children}
     </HydrationBoundary>
   );
 }

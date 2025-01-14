@@ -1,11 +1,11 @@
 "use client";
 
-import { useModelByID } from "@/api/queries";
 import { Skeleton, Text } from "@mantine/core";
 import { useParams } from "next/navigation";
 import { ReactNode } from "react";
-import Anchor from "./Anchor";
-import VendorBreadcrumbs from "./VendorBreadcrumbs";
+import VendorBreadcrumbs from "../vendors/VendorBreadcrumbs";
+import Anchor from "../Anchor";
+import { useModelByID } from "./queries";
 
 interface Props {
   children?: ReactNode;
@@ -18,13 +18,15 @@ export default function ModelBreadcrumbs({ children, modelID }: Props) {
 
   return (
     <VendorBreadcrumbs vendorID={parseInt(vendorID)}>
-      {query.data ? (
+      {query.data?.data ? (
         children ? (
-          <Anchor href={`/vendors/${query.data.vendorID}/models/${modelID}`}>
-            {query.data.name || query.data.model}
+          <Anchor
+            href={`/vendors/${query.data.data.vendorID}/models/${modelID}`}
+          >
+            {query.data.data.name || query.data.data.model}
           </Anchor>
         ) : (
-          <Text>{query.data.name || query.data.model}</Text>
+          <Text>{query.data.data.name || query.data.data.model}</Text>
         )
       ) : query.isLoading ? (
         <Skeleton width={120} height={16} />

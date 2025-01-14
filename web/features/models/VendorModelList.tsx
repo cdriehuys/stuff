@@ -1,17 +1,15 @@
-import apiClient from "@/api/apiClient";
 import { Alert, Button, Loader, Table, Text } from "@mantine/core";
-import Anchor from "./Anchor";
-import Link from "next/link";
 import { IconPlus } from "@tabler/icons-react";
+import Link from "next/link";
+import Anchor from "../Anchor";
+import { useVendorModels } from "./queries";
 
 interface Props {
   vendorID: number;
 }
 
 export default function VendorModelList({ vendorID }: Props) {
-  const query = apiClient.useQuery("get", "/vendors/{vendorID}/models", {
-    params: { path: { vendorID } },
-  });
+  const query = useVendorModels(vendorID);
 
   if (query.isError) {
     return (
@@ -25,7 +23,7 @@ export default function VendorModelList({ vendorID }: Props) {
     return <Loader size="xl" />;
   }
 
-  if (!query.data?.items.length) {
+  if (!query.data?.data?.items.length) {
     return (
       <Alert title="No models">
         <Text mb="md">No models have been registered for this vendor.</Text>
@@ -50,7 +48,7 @@ export default function VendorModelList({ vendorID }: Props) {
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {query.data.items.map((model) => (
+        {query.data.data.items.map((model) => (
           <Table.Tr key={model.id}>
             <Table.Td>
               <Anchor href={`/vendors/${model.vendorID}/models/${model.id}`}>
