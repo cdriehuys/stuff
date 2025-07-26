@@ -1,6 +1,10 @@
 import createClient, { Client } from "openapi-fetch";
 import type { components, paths } from "./api.d.ts";
 
+export type APIError = components["schemas"]["APIError"];
+
+export type Asset = components["schemas"]["Asset"];
+export type NewAsset = components["schemas"]["NewAsset"];
 export type NewModel = components["schemas"]["NewModel"];
 export type NewVendor = components["schemas"]["NewVendor"];
 
@@ -9,6 +13,59 @@ class APIClient {
 
   constructor(base: Client<paths>) {
     this.base = base;
+  }
+
+  async getAssets() {
+    return omitResponse(this.base.GET("/assets"));
+  }
+
+  async createAsset(asset: NewAsset) {
+    const { data, error } = await this.base.POST("/assets", { body: asset });
+
+    if (error !== undefined) {
+      throw error;
+    }
+
+    return data;
+  }
+
+  async getAssetsByModel(modelID: number) {
+    return omitResponse(
+      this.base.GET("/models/{modelID}/assets", {
+        params: { path: { modelID } },
+      }),
+    );
+  }
+
+  async getAssetByID(id: number) {
+    return omitResponse(
+      this.base.GET("/assets/{assetID}", { params: { path: { assetID: id } } }),
+    );
+  }
+
+  async updateAssetByID(id: number, asset: NewAsset) {
+    const { data, error } = await this.base.PUT("/assets/{assetID}", {
+      body: asset,
+      params: { path: { assetID: id } },
+    });
+
+    if (error !== undefined) {
+      throw error;
+    }
+
+    return data;
+  }
+
+  async deleteAssetByID(id: number) {
+    const { error, response } = await this.base.DELETE("/assets/{assetID}", {
+      params: { path: { assetID: id } },
+    });
+
+    if (error === undefined || response.status === 404) {
+      return;
+    }
+
+    throw error;
   }
 
   async createModel(model: NewModel) {

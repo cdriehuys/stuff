@@ -31,7 +31,7 @@ export default function AppShell({ children }: Props) {
         </Group>
       </AppShellBase.Header>
       <AppShellBase.Navbar p="md">
-        <NavLink exact href="/" label="Home" />
+        <NavLink href="/assets" label="Assets" />
         <NavLink href="/vendors" label="Vendors" />
       </AppShellBase.Navbar>
       <AppShellBase.Main>

@@ -23,6 +23,7 @@ type NewAsset struct {
 type Asset struct {
 	ID        int64
 	ModelID   int64
+	VendorID  int64
 	Serial    string
 	Comments  string
 	CreatedAt time.Time
@@ -74,9 +75,9 @@ func (m *AssetModel) Create(ctx context.Context, asset NewAsset) (Asset, error) 
 		return Asset{}, fmt.Errorf("failed to create asset: %v", err)
 	}
 
-	m.logger.InfoContext(ctx, "Created asset.", "assetID", row.ID)
+	m.logger.InfoContext(ctx, "Created asset.", "assetID", row.Asset.ID)
 
-	return assetFromRow(row), nil
+	return assetFromRow(row.VendorID, row.Asset), nil
 }
 
 func (m *AssetModel) DeleteByID(ctx context.Context, id int64) error {
@@ -104,7 +105,7 @@ func (m *AssetModel) GetByID(ctx context.Context, id int64) (Asset, error) {
 		return Asset{}, fmt.Errorf("failed to retrieve asset %d: %v", id, err)
 	}
 
-	return assetFromRow(row), nil
+	return assetFromRow(row.VendorID, row.Asset), nil
 }
 
 func (m *AssetModel) List(ctx context.Context) ([]Asset, error) {
@@ -115,7 +116,21 @@ func (m *AssetModel) List(ctx context.Context) ([]Asset, error) {
 
 	Assets := make([]Asset, len(rows))
 	for i, row := range rows {
-		Assets[i] = assetFromRow(row)
+		Assets[i] = assetFromRow(row.VendorID, row.Asset)
+	}
+
+	return Assets, nil
+}
+
+func (m *AssetModel) ListByModel(ctx context.Context, modelID int64) ([]Asset, error) {
+	rows, err := m.q.ListAssetsByModel(ctx, modelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list assets for model %d: %v", modelID, err)
+	}
+
+	Assets := make([]Asset, len(rows))
+	for i, row := range rows {
+		Assets[i] = assetFromRow(row.VendorID, row.Asset)
 	}
 
 	return Assets, nil
@@ -157,15 +172,16 @@ func (m *AssetModel) UpdateByID(ctx context.Context, id int64, asset NewAsset) (
 		return Asset{}, fmt.Errorf("failed to update Asset: %v", err)
 	}
 
-	return assetFromRow(row), nil
+	return assetFromRow(row.VendorID, row.Asset), nil
 }
 
-func assetFromRow(row queries.Asset) Asset {
+func assetFromRow(vendorID int64, row queries.Asset) Asset {
 	return Asset{
 		Comments:  row.Comments,
 		CreatedAt: row.CreatedAt.Time,
 		ID:        row.ID,
 		ModelID:   row.ModelID,
+		VendorID:  vendorID,
 		Serial:    row.Serial,
 		UpdatedAt: row.UpdatedAt.Time,
 	}

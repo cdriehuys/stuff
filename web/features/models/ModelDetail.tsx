@@ -1,11 +1,12 @@
 "use client";
 
 import { Alert, Button, Group, Loader, Stack, Title } from "@mantine/core";
+import { IconPencil, IconPlus } from "@tabler/icons-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import ModelAssetList from "../assets/ModelAssetList";
 import ModelDeleteButton from "./ModelDeleteButton";
 import { useModelByID } from "./queries";
-import Link from "next/link";
-import { IconPencil } from "@tabler/icons-react";
-import { usePathname } from "next/navigation";
 
 interface Props {
   modelID: number;
@@ -18,7 +19,7 @@ export default function ModelDetail({ modelID }: Props) {
   if (query.isError) {
     return (
       <Alert color="red" title="Error">
-        {"Request failed"}
+        Request failed
       </Alert>
     );
   }
@@ -48,7 +49,7 @@ export default function ModelDetail({ modelID }: Props) {
             </Title>
           )}
         </Stack>
-        <Group>
+        <Group mb="xl">
           <Button
             component={Link}
             href={`${pathname}/edit`}
@@ -59,6 +60,20 @@ export default function ModelDetail({ modelID }: Props) {
           </Button>
           <ModelDeleteButton model={model} />
         </Group>
+        <Group mb="md">
+          <Title flex="1" order={3}>
+            Assets
+          </Title>
+          <Button
+            component={Link}
+            href={`/vendors/${model.vendorID}/models/${modelID}/new-asset`}
+            leftSection={<IconPlus />}
+            size="compact-md"
+          >
+            Create
+          </Button>
+        </Group>
+        <ModelAssetList modelID={modelID} />
       </>
     );
   }

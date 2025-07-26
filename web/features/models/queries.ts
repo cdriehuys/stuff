@@ -20,3 +20,17 @@ export const useVendorModels = (vendorID: number) =>
     queryKey: modelKeys.list({ vendorID }),
     queryFn: () => browserClient.getModelsByVendor(vendorID),
   });
+
+export const useModelDisplayName = (id: number): string | undefined => {
+  const query = useModelByID(id);
+
+  if (query.data?.data) {
+    return query.data.data.name || query.data.data.model;
+  }
+
+  if (query.isError || query.data?.error) {
+    return "Unknown";
+  }
+
+  return undefined;
+};

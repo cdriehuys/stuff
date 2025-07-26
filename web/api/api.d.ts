@@ -311,6 +311,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/models/{modelID}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modelID: number;
+            };
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    modelID: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Model assets listed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AssetCollection"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["ServerError"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vendors": {
         parameters: {
             query?: never;
@@ -492,6 +533,11 @@ export interface components {
              * @example 17
              */
             modelID: number;
+            /**
+             * @description The ID of the vendor that owns the parent model.
+             * @example 76
+             */
+            vendorID: number;
             /** @description The asset's serial number. */
             serial?: string;
             /** @description Free text relating to the asset. */

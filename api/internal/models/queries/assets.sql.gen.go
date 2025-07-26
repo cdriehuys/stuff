@@ -10,9 +10,10 @@ import (
 )
 
 const createAsset = `-- name: CreateAsset :one
+WITH model AS (SELECT id, model, vendor_id, name, created_at, updated_at FROM models WHERE id = $1)
 INSERT INTO assets(model_id, "serial", comments)
 VALUES ($1, $2, $3)
-RETURNING id, model_id, serial, comments, created_at, updated_at
+RETURNING assets.id, assets.model_id, assets.serial, assets.comments, assets.created_at, assets.updated_at, (SELECT vendor_id FROM model) AS vendor_id
 `
 
 type CreateAssetParams struct {
@@ -21,16 +22,22 @@ type CreateAssetParams struct {
 	Comments string
 }
 
-func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error) {
+type CreateAssetRow struct {
+	Asset    Asset
+	VendorID int64
+}
+
+func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (CreateAssetRow, error) {
 	row := q.db.QueryRow(ctx, createAsset, arg.ModelID, arg.Serial, arg.Comments)
-	var i Asset
+	var i CreateAssetRow
 	err := row.Scan(
-		&i.ID,
-		&i.ModelID,
-		&i.Serial,
-		&i.Comments,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Asset.ID,
+		&i.Asset.ModelID,
+		&i.Asset.Serial,
+		&i.Asset.Comments,
+		&i.Asset.CreatedAt,
+		&i.Asset.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }
@@ -49,43 +56,104 @@ func (q *Queries) DeleteAssetByID(ctx context.Context, assetID int64) (int64, er
 }
 
 const getAssetByID = `-- name: GetAssetByID :one
-SELECT id, model_id, serial, comments, created_at, updated_at FROM assets WHERE id = $1
+SELECT a.id, a.model_id, a.serial, a.comments, a.created_at, a.updated_at, m.vendor_id
+FROM assets a
+    JOIN models m ON a.model_id = m.id
+WHERE a.id = $1
 `
 
-func (q *Queries) GetAssetByID(ctx context.Context, assetID int64) (Asset, error) {
+type GetAssetByIDRow struct {
+	Asset    Asset
+	VendorID int64
+}
+
+func (q *Queries) GetAssetByID(ctx context.Context, assetID int64) (GetAssetByIDRow, error) {
 	row := q.db.QueryRow(ctx, getAssetByID, assetID)
-	var i Asset
+	var i GetAssetByIDRow
 	err := row.Scan(
-		&i.ID,
-		&i.ModelID,
-		&i.Serial,
-		&i.Comments,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Asset.ID,
+		&i.Asset.ModelID,
+		&i.Asset.Serial,
+		&i.Asset.Comments,
+		&i.Asset.CreatedAt,
+		&i.Asset.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }
 
 const listAssets = `-- name: ListAssets :many
-SELECT id, model_id, serial, comments, created_at, updated_at FROM assets ORDER BY id LIMIT 50
+SELECT a.id, a.model_id, a.serial, a.comments, a.created_at, a.updated_at, m.vendor_id
+FROM assets a
+    JOIN models m ON a.model_id = m.id
+ORDER BY a.id
+LIMIT 50
 `
 
-func (q *Queries) ListAssets(ctx context.Context) ([]Asset, error) {
+type ListAssetsRow struct {
+	Asset    Asset
+	VendorID int64
+}
+
+func (q *Queries) ListAssets(ctx context.Context) ([]ListAssetsRow, error) {
 	rows, err := q.db.Query(ctx, listAssets)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Asset
+	var items []ListAssetsRow
 	for rows.Next() {
-		var i Asset
+		var i ListAssetsRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.ModelID,
-			&i.Serial,
-			&i.Comments,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Asset.ID,
+			&i.Asset.ModelID,
+			&i.Asset.Serial,
+			&i.Asset.Comments,
+			&i.Asset.CreatedAt,
+			&i.Asset.UpdatedAt,
+			&i.VendorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAssetsByModel = `-- name: ListAssetsByModel :many
+SELECT a.id, a.model_id, a.serial, a.comments, a.created_at, a.updated_at, m.vendor_id
+FROM assets a
+    JOIN models m ON a.model_id = m.id
+WHERE a.model_id = $1
+ORDER BY a.id
+LIMIT 50
+`
+
+type ListAssetsByModelRow struct {
+	Asset    Asset
+	VendorID int64
+}
+
+func (q *Queries) ListAssetsByModel(ctx context.Context, modelID int64) ([]ListAssetsByModelRow, error) {
+	rows, err := q.db.Query(ctx, listAssetsByModel, modelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAssetsByModelRow
+	for rows.Next() {
+		var i ListAssetsByModelRow
+		if err := rows.Scan(
+			&i.Asset.ID,
+			&i.Asset.ModelID,
+			&i.Asset.Serial,
+			&i.Asset.Comments,
+			&i.Asset.CreatedAt,
+			&i.Asset.UpdatedAt,
+			&i.VendorID,
 		); err != nil {
 			return nil, err
 		}
@@ -98,10 +166,11 @@ func (q *Queries) ListAssets(ctx context.Context) ([]Asset, error) {
 }
 
 const updateAssetByID = `-- name: UpdateAssetByID :one
-UPDATE assets
+WITH model AS (SELECT id, model, vendor_id, name, created_at, updated_at FROM models WHERE id = $1)
+UPDATE assets a
 SET model_id = $1, "serial" = $2, comments = $3
-WHERE id = $4
-RETURNING id, model_id, serial, comments, created_at, updated_at
+WHERE a.id = $4
+RETURNING a.id, a.model_id, a.serial, a.comments, a.created_at, a.updated_at, (SELECT vendor_id FROM model) AS vendor_id
 `
 
 type UpdateAssetByIDParams struct {
@@ -111,21 +180,27 @@ type UpdateAssetByIDParams struct {
 	AssetID  int64
 }
 
-func (q *Queries) UpdateAssetByID(ctx context.Context, arg UpdateAssetByIDParams) (Asset, error) {
+type UpdateAssetByIDRow struct {
+	Asset    Asset
+	VendorID int64
+}
+
+func (q *Queries) UpdateAssetByID(ctx context.Context, arg UpdateAssetByIDParams) (UpdateAssetByIDRow, error) {
 	row := q.db.QueryRow(ctx, updateAssetByID,
 		arg.ModelID,
 		arg.Serial,
 		arg.Comments,
 		arg.AssetID,
 	)
-	var i Asset
+	var i UpdateAssetByIDRow
 	err := row.Scan(
-		&i.ID,
-		&i.ModelID,
-		&i.Serial,
-		&i.Comments,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Asset.ID,
+		&i.Asset.ModelID,
+		&i.Asset.Serial,
+		&i.Asset.Comments,
+		&i.Asset.CreatedAt,
+		&i.Asset.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }

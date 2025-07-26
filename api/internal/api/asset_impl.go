@@ -90,12 +90,33 @@ func (s *Server) DeleteAssetsAssetID(ctx context.Context, req DeleteAssetsAssetI
 	return DeleteAssetsAssetID204Response{}, nil
 }
 
+func (s *Server) GetModelsModelIDAssets(ctx context.Context, req GetModelsModelIDAssetsRequestObject) (GetModelsModelIDAssetsResponseObject, error) {
+	_, err := s.models.GetByID(ctx, int64(req.ModelID))
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			return GetModelsModelIDAssets404JSONResponse{s.modelNotFoundByID(ctx, req.ModelID)}, nil
+		}
+
+		return GetModelsModelIDAssets500JSONResponse{}, err
+	}
+
+	s.logger.DebugContext(ctx, "Model exists.", "modelID", req.ModelID)
+
+	assets, err := s.assets.ListByModel(ctx, int64(req.ModelID))
+	if err != nil {
+		return GetModelsModelIDAssets500JSONResponse{}, err
+	}
+
+	return GetModelsModelIDAssets200JSONResponse(assetCollection(assets)), nil
+}
+
 func externalAsset(asset models.Asset) Asset {
 	return Asset{
 		Comments:  &asset.Comments,
 		CreatedAt: asset.CreatedAt,
 		Id:        int(asset.ID),
 		ModelID:   int(asset.ModelID),
+		VendorID:  int(asset.VendorID),
 		Serial:    &asset.Serial,
 		UpdatedAt: asset.UpdatedAt,
 	}

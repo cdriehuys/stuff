@@ -184,6 +184,29 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /models/{modelID}/assets:
+    parameters:
+      - name: modelID
+        in: path
+        required: true
+        schema:
+          type: integer
+          description: The ID of the model to retrieve.
+          example: 17
+
+    get:
+      responses:
+        "200":
+          description: Model assets listed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetCollection"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /vendors:
     get:
       responses:
@@ -302,6 +325,7 @@ components:
       required:
         - id
         - modelID
+        - vendorID
         - createdAt
         - updatedAt
       properties:
@@ -313,6 +337,10 @@ components:
           type: integer
           description: The ID of the model that this asset is an instance of.
           example: 17
+        vendorID:
+          type: integer
+          description: The ID of the vendor that owns the parent model.
+          example: 76
         serial:
           type: string
           description: The asset's serial number.

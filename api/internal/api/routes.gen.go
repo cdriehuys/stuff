@@ -44,6 +44,9 @@ type Asset struct {
 
 	// UpdatedAt The instant the vendor's information was last updated.
 	UpdatedAt time.Time `json:"updatedAt"`
+
+	// VendorID The ID of the vendor that owns the parent model.
+	VendorID int `json:"vendorID"`
 }
 
 // AssetCollection defines model for AssetCollection.
@@ -192,6 +195,9 @@ type ServerInterface interface {
 
 	// (PUT /models/{modelID})
 	PutModelsModelID(w http.ResponseWriter, r *http.Request, modelID int)
+
+	// (GET /models/{modelID}/assets)
+	GetModelsModelIDAssets(w http.ResponseWriter, r *http.Request, modelID int)
 
 	// (GET /vendors)
 	GetVendors(w http.ResponseWriter, r *http.Request)
@@ -415,6 +421,31 @@ func (siw *ServerInterfaceWrapper) PutModelsModelID(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutModelsModelID(w, r, modelID)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetModelsModelIDAssets operation middleware
+func (siw *ServerInterfaceWrapper) GetModelsModelIDAssets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "modelID" -------------
+	var modelID int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "modelID", r.PathValue("modelID"), &modelID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "modelID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetModelsModelIDAssets(w, r, modelID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -657,6 +688,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc("DELETE "+options.BaseURL+"/models/{modelID}", wrapper.DeleteModelsModelID)
 	m.HandleFunc("GET "+options.BaseURL+"/models/{modelID}", wrapper.GetModelsModelID)
 	m.HandleFunc("PUT "+options.BaseURL+"/models/{modelID}", wrapper.PutModelsModelID)
+	m.HandleFunc("GET "+options.BaseURL+"/models/{modelID}/assets", wrapper.GetModelsModelIDAssets)
 	m.HandleFunc("GET "+options.BaseURL+"/vendors", wrapper.GetVendors)
 	m.HandleFunc("POST "+options.BaseURL+"/vendors", wrapper.PostVendors)
 	m.HandleFunc("DELETE "+options.BaseURL+"/vendors/{vendorID}", wrapper.DeleteVendorsVendorID)
@@ -1047,6 +1079,41 @@ func (response PutModelsModelID500JSONResponse) VisitPutModelsModelIDResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetModelsModelIDAssetsRequestObject struct {
+	ModelID int `json:"modelID"`
+}
+
+type GetModelsModelIDAssetsResponseObject interface {
+	VisitGetModelsModelIDAssetsResponse(w http.ResponseWriter) error
+}
+
+type GetModelsModelIDAssets200JSONResponse AssetCollection
+
+func (response GetModelsModelIDAssets200JSONResponse) VisitGetModelsModelIDAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetModelsModelIDAssets404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetModelsModelIDAssets404JSONResponse) VisitGetModelsModelIDAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetModelsModelIDAssets500JSONResponse struct{ ServerErrorJSONResponse }
+
+func (response GetModelsModelIDAssets500JSONResponse) VisitGetModelsModelIDAssetsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetVendorsRequestObject struct {
 }
 
@@ -1252,6 +1319,9 @@ type StrictServerInterface interface {
 
 	// (PUT /models/{modelID})
 	PutModelsModelID(ctx context.Context, request PutModelsModelIDRequestObject) (PutModelsModelIDResponseObject, error)
+
+	// (GET /models/{modelID}/assets)
+	GetModelsModelIDAssets(ctx context.Context, request GetModelsModelIDAssetsRequestObject) (GetModelsModelIDAssetsResponseObject, error)
 
 	// (GET /vendors)
 	GetVendors(ctx context.Context, request GetVendorsRequestObject) (GetVendorsResponseObject, error)
@@ -1571,6 +1641,32 @@ func (sh *strictHandler) PutModelsModelID(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutModelsModelIDResponseObject); ok {
 		if err := validResponse.VisitPutModelsModelIDResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetModelsModelIDAssets operation middleware
+func (sh *strictHandler) GetModelsModelIDAssets(w http.ResponseWriter, r *http.Request, modelID int) {
+	var request GetModelsModelIDAssetsRequestObject
+
+	request.ModelID = modelID
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetModelsModelIDAssets(ctx, request.(GetModelsModelIDAssetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetModelsModelIDAssets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetModelsModelIDAssetsResponseObject); ok {
+		if err := validResponse.VisitGetModelsModelIDAssetsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
