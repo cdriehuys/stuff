@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { ReactNode } from "react";
 import VendorBreadcrumbs from "../vendors/VendorBreadcrumbs";
 import Anchor from "../Anchor";
-import { useModelByID } from "./queries";
+import { useModelByID, useModelDisplayName } from "./queries";
 
 interface Props {
   children?: ReactNode;
@@ -15,6 +15,7 @@ interface Props {
 export default function ModelBreadcrumbs({ children, modelID }: Props) {
   const { vendorID } = useParams<{ vendorID: string }>();
   const query = useModelByID(modelID);
+  const displayName = useModelDisplayName(modelID);
 
   return (
     <VendorBreadcrumbs vendorID={parseInt(vendorID)}>
@@ -23,10 +24,10 @@ export default function ModelBreadcrumbs({ children, modelID }: Props) {
           <Anchor
             href={`/vendors/${query.data.data.vendorID}/models/${modelID}`}
           >
-            {query.data.data.name || query.data.data.model}
+            {displayName}
           </Anchor>
         ) : (
-          <Text>{query.data.data.name || query.data.data.model}</Text>
+          <Text>{displayName}</Text>
         )
       ) : query.isLoading ? (
         <Skeleton width={120} height={16} />

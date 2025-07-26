@@ -17,6 +17,7 @@ type assetModel interface {
 	DeleteByID(ctx context.Context, id int64) error
 	GetByID(ctx context.Context, id int64) (models.Asset, error)
 	List(ctx context.Context) ([]models.Asset, error)
+	ListByModel(ctx context.Context, modelID int64) ([]models.Asset, error)
 	UpdateByID(ctx context.Context, id int64, updated models.NewAsset) (models.Asset, error)
 }
 
